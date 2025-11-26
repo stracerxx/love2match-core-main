@@ -1,0 +1,16 @@
+{
+  "name": "PremiumContentLike",
+  "type": "object",
+  "properties": {
+    "content_id": {"type": "string", "description": "ID of the premium content"},
+    "user_email": {"type": "string", "description": "Email of user who liked"},
+    "creator_email": {"type": "string", "description": "Email of content creator"}
+  },
+  "required": ["content_id", "user_email", "creator_email"],
+  "rls": {
+    "create": {"user_email": "{{user.email}}"},
+    "read": {},
+    "update": {"user_email": "{{user.email}}"},
+    "delete": {"user_email": "{{user.email}}"}
+  }
+}

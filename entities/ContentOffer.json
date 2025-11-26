@@ -1,0 +1,25 @@
+{
+  "name": "ContentOffer",
+  "type": "object",
+  "properties": {
+    "creator_email": {"type": "string", "description": "Email of content creator"},
+    "buyer_email": {"type": "string", "description": "Email of buyer"},
+    "match_id": {"type": "string", "description": "ID of the match"},
+    "title": {"type": "string", "description": "Content title/description"},
+    "content_type": {"type": "string", "enum": ["photo", "video", "photo-set"], "description": "Type of content"},
+    "media_urls": {"type": "array", "items": {"type": "string"}, "description": "URLs of the media files"},
+    "preview_url": {"type": "string", "description": "Blurred preview image URL"},
+    "price": {"type": "number", "description": "Price in LOVE tokens"},
+    "required_tier_id": {"type": "string", "description": "Optional: SubscriptionTier ID required to access this content"},
+    "status": {"type": "string", "enum": ["offered", "purchased", "declined", "expired"], "default": "offered", "description": "Offer status"},
+    "purchased_at": {"type": "string", "format": "date-time", "description": "When content was purchased"},
+    "expires_at": {"type": "string", "format": "date-time", "description": "When offer expires"}
+  },
+  "required": ["creator_email", "buyer_email", "match_id", "content_type", "price"],
+  "rls": {
+    "create": {"creator_email": "{{user.email}}"},
+    "read": {"$or": [{"creator_email": "{{user.email}}"}, {"buyer_email": "{{user.email}}"}]},
+    "update": {"$or": [{"creator_email": "{{user.email}}"}, {"buyer_email": "{{user.email}}"}]},
+    "delete": {"creator_email": "{{user.email}}"}
+  }
+}

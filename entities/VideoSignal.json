@@ -1,0 +1,19 @@
+{
+  "name": "VideoSignal",
+  "type": "object",
+  "properties": {
+    "match_id": {"type": "string", "description": "ID of the match this signal belongs to"},
+    "sender_email": {"type": "string", "description": "Email of signal sender"},
+    "receiver_email": {"type": "string", "description": "Email of signal receiver"},
+    "signal_type": {"type": "string", "enum": ["offer", "answer", "ice-candidate", "call-start", "call-end"], "description": "Type of WebRTC signal"},
+    "signal_data": {"type": "object", "description": "Signal payload (SDP or ICE candidate)"},
+    "is_processed": {"type": "boolean", "default": false, "description": "Whether signal has been processed by receiver"}
+  },
+  "required": ["match_id", "sender_email", "receiver_email", "signal_type"],
+  "rls": {
+    "create": {"sender_email": "{{user.email}}"},
+    "read": {"$or": [{"sender_email": "{{user.email}}"}, {"receiver_email": "{{user.email}}"}]},
+    "update": {"$or": [{"sender_email": "{{user.email}}"}, {"receiver_email": "{{user.email}}"}]},
+    "delete": {"sender_email": "{{user.email}}"}
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "TokenTransaction",
+  "type": "object",
+  "properties": {
+    "user_email": {"type": "string", "description": "User email"},
+    "transaction_type": {"type": "string", "enum": ["earn", "spend", "swap", "transfer", "purchase", "refund"], "description": "Type of transaction"},
+    "token_type": {"type": "string", "enum": ["LOVE", "LOVE2"], "description": "Token type"},
+    "amount": {"type": "number", "description": "Token amount"},
+    "balance_before": {"type": "number", "description": "Balance before transaction"},
+    "balance_after": {"type": "number", "description": "Balance after transaction"},
+    "description": {"type": "string", "description": "Transaction description"},
+    "related_entity_type": {"type": "string", "description": "Related entity type (Gift, Game, Content, etc)"},
+    "related_entity_id": {"type": "string", "description": "Related entity ID"},
+    "solana_signature": {"type": "string", "description": "Solana transaction signature if applicable"}
+  },
+  "required": ["user_email", "transaction_type", "token_type", "amount"],
+  "rls": {
+    "create": {"$or": [{"user_email": "{{user.email}}"}, {"user_condition": {"role": "admin"}}]},
+    "read": {"user_email": "{{user.email}}"},
+    "update": {"user_condition": {"role": "admin"}},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

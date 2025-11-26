@@ -1,0 +1,22 @@
+{
+  "name": "UserSubscription",
+  "type": "object",
+  "properties": {
+    "subscriber_email": {"type": "string", "description": "Email of user who subscribed"},
+    "creator_email": {"type": "string", "description": "Email of creator they subscribed to"},
+    "subscription_tier_id": {"type": "string", "description": "Reference to SubscriptionTier"},
+    "start_date": {"type": "string", "format": "date-time", "description": "Subscription start date"},
+    "end_date": {"type": "string", "format": "date-time", "description": "Current subscription period end date"},
+    "status": {"type": "string", "enum": ["active", "cancelled", "expired", "paused"], "default": "active", "description": "Subscription status"},
+    "last_billed_date": {"type": "string", "format": "date-time", "description": "Last billing date"},
+    "auto_renew": {"type": "boolean", "default": true, "description": "Whether subscription auto-renews"},
+    "total_paid": {"type": "number", "default": 0, "description": "Total LOVE tokens paid for this subscription"}
+  },
+  "required": ["subscriber_email", "creator_email", "subscription_tier_id", "start_date", "end_date"],
+  "rls": {
+    "create": {"subscriber_email": "{{user.email}}"},
+    "read": {"$or": [{"subscriber_email": "{{user.email}}"}, {"creator_email": "{{user.email}}"}]},
+    "update": {"subscriber_email": "{{user.email}}"},
+    "delete": {"subscriber_email": "{{user.email}}"}
+  }
+}

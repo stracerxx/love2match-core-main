@@ -1,0 +1,20 @@
+{
+  "name": "Game",
+  "type": "object",
+  "properties": {
+    "name": {"type": "string", "description": "Game name"},
+    "description": {"type": "string", "description": "Game description"},
+    "type": {"type": "string", "enum": ["match-maker", "speed-match", "trivia", "daily-spin", "prediction"], "description": "Game type"},
+    "entry_cost": {"type": "number", "default": 0, "description": "LOVE tokens to play"},
+    "reward_amount": {"type": "number", "description": "LOVE tokens reward"},
+    "is_active": {"type": "boolean", "default": true, "description": "Game active status"},
+    "icon": {"type": "string", "description": "Game icon"}
+  },
+  "required": ["name", "type"],
+  "rls": {
+    "create": {"user_condition": {"role": "admin"}},
+    "read": {},
+    "update": {"user_condition": {"role": "admin"}},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

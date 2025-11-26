@@ -1,0 +1,19 @@
+{
+  "name": "Verification",
+  "type": "object",
+  "properties": {
+    "verified_user_email": {"type": "string", "description": "Email of user being verified"},
+    "verifier_email": {"type": "string", "description": "Email of user doing verification"},
+    "verification_method": {"type": "string", "enum": ["qr-code", "manual-id"], "description": "Method used for verification"},
+    "confirmation_code": {"type": "string", "description": "Unique verification code"},
+    "verified_at": {"type": "string", "format": "date-time", "description": "When verification occurred"},
+    "reward_tokens": {"type": "number", "default": 50, "description": "LOVE tokens rewarded to each party"}
+  },
+  "required": ["verified_user_email", "verifier_email"],
+  "rls": {
+    "create": {"created_by": "{{user.email}}"},
+    "read": {"$or": [{"verified_user_email": "{{user.email}}"}, {"verifier_email": "{{user.email}}"}]},
+    "update": {"user_condition": {"role": "admin"}},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

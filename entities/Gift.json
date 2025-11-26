@@ -1,0 +1,21 @@
+{
+  "name": "Gift",
+  "type": "object",
+  "properties": {
+    "name": {"type": "string", "description": "Gift name"},
+    "description": {"type": "string", "description": "Gift description"},
+    "category": {"type": "string", "enum": ["flowers", "candy", "drinks", "jewelry", "romantic", "fun", "luxury"], "description": "Gift category"},
+    "icon": {"type": "string", "description": "Gift icon/emoji"},
+    "image_url": {"type": "string", "description": "Gift image URL"},
+    "price_love": {"type": "number", "description": "Price in LOVE tokens"},
+    "redemption_value": {"type": "number", "description": "Token value when redeemed"},
+    "is_active": {"type": "boolean", "default": true, "description": "Whether gift is available for purchase"}
+  },
+  "required": ["name", "category", "price_love", "redemption_value"],
+  "rls": {
+    "create": {"user_condition": {"role": "admin"}},
+    "read": {},
+    "update": {"user_condition": {"role": "admin"}},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

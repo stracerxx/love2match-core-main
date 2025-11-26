@@ -1,0 +1,35 @@
+{
+  "name": "Business",
+  "type": "object",
+  "properties": {
+    "owner_email": {"type": "string", "description": "Email of business owner"},
+    "business_name": {"type": "string", "description": "Business name"},
+    "description": {"type": "string", "description": "Business description"},
+    "category": {"type": "string", "enum": ["restaurant", "bar", "cafe", "retail", "entertainment", "wellness", "services", "other"], "description": "Business category"},
+    "logo_url": {"type": "string", "description": "Business logo URL"},
+    "cover_photos": {"type": "array", "items": {"type": "string"}, "description": "Business cover photo URLs"},
+    "address": {"type": "string", "description": "Physical address"},
+    "city": {"type": "string", "description": "City"},
+    "state": {"type": "string", "description": "State"},
+    "zip": {"type": "string", "description": "ZIP code"},
+    "latitude": {"type": "number", "description": "Location latitude"},
+    "longitude": {"type": "number", "description": "Location longitude"},
+    "phone": {"type": "string", "description": "Business phone"},
+    "email": {"type": "string", "description": "Business email"},
+    "website": {"type": "string", "description": "Business website"},
+    "social_instagram": {"type": "string", "description": "Instagram handle"},
+    "social_facebook": {"type": "string", "description": "Facebook page"},
+    "accepts_love": {"type": "boolean", "default": true, "description": "Accepts LOVE tokens"},
+    "accepts_love2": {"type": "boolean", "default": false, "description": "Accepts LOVE2 tokens"},
+    "solana_wallet": {"type": "string", "description": "Solana wallet for LOVE2"},
+    "is_verified": {"type": "boolean", "default": false, "description": "Business verification status"},
+    "is_active": {"type": "boolean", "default": true, "description": "Business active status"}
+  },
+  "required": ["owner_email", "business_name", "category"],
+  "rls": {
+    "create": {"created_by": "{{user.email}}"},
+    "read": {},
+    "update": {"owner_email": "{{user.email}}"},
+    "delete": {"$or": [{"owner_email": "{{user.email}}"}, {"user_condition": {"role": "admin"}}]}
+  }
+}

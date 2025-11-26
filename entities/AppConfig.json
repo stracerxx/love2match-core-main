@@ -1,0 +1,17 @@
+{
+  "name": "AppConfig",
+  "type": "object",
+  "properties": {
+    "config_key": {"type": "string", "description": "Configuration key"},
+    "config_value": {"type": "string", "description": "Configuration value"},
+    "description": {"type": "string", "description": "What this config controls"},
+    "value_type": {"type": "string", "enum": ["string", "number", "boolean", "json"], "description": "Type of value"}
+  },
+  "required": ["config_key", "config_value"],
+  "rls": {
+    "create": {"user_condition": {"role": "admin"}},
+    "read": {},
+    "update": {"user_condition": {"role": "admin"}},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

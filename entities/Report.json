@@ -1,0 +1,23 @@
+{
+  "name": "Report",
+  "type": "object",
+  "properties": {
+    "reporter_email": {"type": "string", "description": "Email of user making the report"},
+    "reported_user_email": {"type": "string", "description": "Email of reported user"},
+    "report_type": {"type": "string", "enum": ["inappropriate-content", "harassment", "fake-profile", "spam", "underage", "other"], "description": "Type of report"},
+    "description": {"type": "string", "description": "Detailed description of the issue"},
+    "related_entity_type": {"type": "string", "description": "Type of entity being reported (Message, Profile, Photo, etc)"},
+    "related_entity_id": {"type": "string", "description": "ID of the entity being reported"},
+    "status": {"type": "string", "enum": ["pending", "reviewing", "resolved", "dismissed"], "default": "pending", "description": "Report status"},
+    "admin_notes": {"type": "string", "description": "Admin notes on the report"},
+    "resolved_at": {"type": "string", "format": "date-time", "description": "When report was resolved"},
+    "resolved_by": {"type": "string", "description": "Admin who resolved the report"}
+  },
+  "required": ["reporter_email", "reported_user_email", "report_type"],
+  "rls": {
+    "create": {"reporter_email": "{{user.email}}"},
+    "read": {"$or": [{"reporter_email": "{{user.email}}"}, {"user_condition": {"role": "admin"}}]},
+    "update": {"user_condition": {"role": "admin"}},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

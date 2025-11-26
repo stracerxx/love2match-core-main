@@ -1,0 +1,20 @@
+{
+  "name": "Referral",
+  "type": "object",
+  "properties": {
+    "referrer_email": {"type": "string", "description": "Email of person who referred"},
+    "referee_email": {"type": "string", "description": "Email of person who was referred"},
+    "referral_code": {"type": "string", "description": "Referral code used"},
+    "status": {"type": "string", "enum": ["pending", "completed"], "default": "pending", "description": "Referral status"},
+    "referrer_reward": {"type": "number", "description": "LOVE tokens given to referrer"},
+    "referee_reward": {"type": "number", "description": "LOVE tokens given to referee"},
+    "completed_at": {"type": "string", "format": "date-time", "description": "When referral was completed"}
+  },
+  "required": ["referrer_email", "referee_email", "referral_code"],
+  "rls": {
+    "create": {"created_by": "{{user.email}}"},
+    "read": {"$or": [{"referrer_email": "{{user.email}}"}, {"referee_email": "{{user.email}}"}]},
+    "update": {"user_condition": {"role": "admin"}},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

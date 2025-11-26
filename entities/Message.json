@@ -1,0 +1,23 @@
+{
+  "name": "Message",
+  "type": "object",
+  "properties": {
+    "match_id": {"type": "string", "description": "ID of the match this message belongs to"},
+    "sender_email": {"type": "string", "description": "Email of message sender"},
+    "receiver_email": {"type": "string", "description": "Email of message receiver"},
+    "content": {"type": "string", "description": "Message text content"},
+    "message_type": {"type": "string", "enum": ["text", "image", "video", "gift", "content-offer"], "default": "text", "description": "Type of message"},
+    "media_url": {"type": "string", "description": "URL of attached media"},
+    "gift_id": {"type": "string", "description": "ID of gift sent"},
+    "content_offer_id": {"type": "string", "description": "ID of premium content offer"},
+    "is_read": {"type": "boolean", "default": false, "description": "Whether message has been read"},
+    "read_at": {"type": "string", "format": "date-time", "description": "When message was read"}
+  },
+  "required": ["match_id", "sender_email", "receiver_email"],
+  "rls": {
+    "create": {"sender_email": "{{user.email}}"},
+    "read": {"$or": [{"sender_email": "{{user.email}}"}, {"receiver_email": "{{user.email}}"}]},
+    "update": {"sender_email": "{{user.email}}"},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

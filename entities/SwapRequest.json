@@ -1,0 +1,24 @@
+{
+  "name": "SwapRequest",
+  "type": "object",
+  "properties": {
+    "user_email": {"type": "string", "description": "Email of user requesting swap"},
+    "love_amount": {"type": "number", "description": "Amount of LOVE to swap"},
+    "love2_amount": {"type": "number", "description": "Amount of LOVE2 to receive"},
+    "exchange_rate": {"type": "number", "description": "Exchange rate used"},
+    "status": {"type": "string", "enum": ["pending", "approved", "rejected", "completed", "cancelled"], "default": "pending", "description": "Swap request status"},
+    "approved_by": {"type": "string", "description": "Admin who approved"},
+    "approved_at": {"type": "string", "format": "date-time", "description": "When approved"},
+    "rejected_by": {"type": "string", "description": "Admin who rejected"},
+    "rejected_at": {"type": "string", "format": "date-time", "description": "When rejected"},
+    "rejection_reason": {"type": "string", "description": "Reason for rejection"},
+    "solana_signature": {"type": "string", "description": "Transaction signature after completion"}
+  },
+  "required": ["user_email", "love_amount", "love2_amount", "exchange_rate"],
+  "rls": {
+    "create": {"user_email": "{{user.email}}"},
+    "read": {"$or": [{"user_email": "{{user.email}}"}, {"user_condition": {"role": "admin"}}]},
+    "update": {"user_condition": {"role": "admin"}},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

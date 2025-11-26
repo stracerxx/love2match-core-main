@@ -1,0 +1,25 @@
+{
+  "name": "Content",
+  "type": "object",
+  "properties": {
+    "creator_email": {"type": "string", "description": "Email of content creator"},
+    "title": {"type": "string", "description": "Content title"},
+    "description": {"type": "string", "description": "Content description"},
+    "content_type": {"type": "string", "enum": ["image", "video"], "description": "Type of content"},
+    "thumbnail_url": {"type": "string", "description": "Preview thumbnail URL (blurred)"},
+    "content_url": {"type": "string", "description": "Full content URL"},
+    "price_love": {"type": "number", "description": "Price in LOVE tokens"},
+    "status": {"type": "string", "enum": ["pending", "approved", "rejected", "paused", "deleted"], "default": "pending", "description": "Moderation status"},
+    "moderation_notes": {"type": "string", "description": "Notes from moderation"},
+    "total_sales": {"type": "number", "default": 0, "description": "Number of times purchased"},
+    "total_earnings": {"type": "number", "default": 0, "description": "Total LOVE tokens earned"},
+    "is_nsfw": {"type": "boolean", "default": false, "description": "Contains NSFW content"}
+  },
+  "required": ["creator_email", "content_type", "content_url", "price_love"],
+  "rls": {
+    "create": {"created_by": "{{user.email}}"},
+    "read": {"$or": [{"creator_email": "{{user.email}}"}, {"user_condition": {"role": "admin"}}]},
+    "update": {"creator_email": "{{user.email}}"},
+    "delete": {"$or": [{"creator_email": "{{user.email}}"}, {"user_condition": {"role": "admin"}}]}
+  }
+}

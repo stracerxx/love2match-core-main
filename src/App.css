@@ -1,0 +1,22 @@
+/* App-wide styles */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  /* Force dark mode */
+  color-scheme: dark;
+}
+
+body {
+  /* Dark mode applied via class */
+}
+
+#root {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+

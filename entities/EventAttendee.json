@@ -1,0 +1,18 @@
+{
+  "name": "EventAttendee",
+  "type": "object",
+  "properties": {
+    "event_id": {"type": "string", "description": "ID of the event"},
+    "attendee_email": {"type": "string", "description": "Email of attendee"},
+    "status": {"type": "string", "enum": ["going", "interested", "not-going"], "default": "interested", "description": "Attendance status"},
+    "tokens_paid": {"type": "number", "default": 0, "description": "LOVE tokens paid for entry"},
+    "check_in_time": {"type": "string", "format": "date-time", "description": "When user checked in at event"}
+  },
+  "required": ["event_id", "attendee_email"],
+  "rls": {
+    "create": {"attendee_email": "{{user.email}}"},
+    "read": {"$or": [{"attendee_email": "{{user.email}}"}, {"user_condition": {"role": "admin"}}]},
+    "update": {"attendee_email": "{{user.email}}"},
+    "delete": {"attendee_email": "{{user.email}}"}
+  }
+}

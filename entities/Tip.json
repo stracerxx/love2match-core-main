@@ -1,0 +1,20 @@
+{
+  "name": "Tip",
+  "type": "object",
+  "properties": {
+    "sender_email": {"type": "string", "description": "Email of user sending tip"},
+    "receiver_email": {"type": "string", "description": "Email of creator receiving tip"},
+    "amount": {"type": "number", "description": "Amount in LOVE tokens"},
+    "message": {"type": "string", "description": "Optional message with tip"},
+    "content_id": {"type": "string", "description": "Optional: ID of content being tipped"},
+    "content_type": {"type": "string", "enum": ["profile", "premium_content", "live_stream", "general"], "description": "Type of content tipped"},
+    "is_anonymous": {"type": "boolean", "default": false, "description": "Whether tip is anonymous"}
+  },
+  "required": ["sender_email", "receiver_email", "amount", "content_type"],
+  "rls": {
+    "create": {"sender_email": "{{user.email}}"},
+    "read": {"$or": [{"sender_email": "{{user.email}}"}, {"receiver_email": "{{user.email}}"}]},
+    "update": {"user_condition": {"role": "admin"}},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

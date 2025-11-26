@@ -1,0 +1,19 @@
+{
+  "name": "ContentPurchase",
+  "type": "object",
+  "properties": {
+    "content_id": {"type": "string", "description": "ID of purchased content"},
+    "buyer_email": {"type": "string", "description": "Email of buyer"},
+    "seller_email": {"type": "string", "description": "Email of seller"},
+    "price_paid": {"type": "number", "description": "LOVE tokens paid"},
+    "platform_fee": {"type": "number", "description": "Platform fee taken"},
+    "seller_earnings": {"type": "number", "description": "LOVE tokens seller received"}
+  },
+  "required": ["content_id", "buyer_email", "seller_email", "price_paid"],
+  "rls": {
+    "create": {"created_by": "{{user.email}}"},
+    "read": {"$or": [{"buyer_email": "{{user.email}}"}, {"seller_email": "{{user.email}}"}]},
+    "update": {"user_condition": {"role": "admin"}},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

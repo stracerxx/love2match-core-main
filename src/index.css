@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 222 20% 6%;
+    --foreground: 0 0% 97%;
+
+    --card: 222 18% 12%;
+    --card-foreground: 0 0% 97%;
+
+    --popover: 222 18% 12%;
+    --popover-foreground: 0 0% 97%;
+
+    --primary: 323 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 18% 20%;
+    --secondary-foreground: 0 0% 97%;
+
+    --muted: 222 18% 20%;
+    --muted-foreground: 222 10% 60%;
+
+    --accent: 190 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 18% 20%;
+    --input: 222 18% 20%;
+    --ring: 323 100% 50%;
+
+    --radius: 1rem;
+
+    /* Dating app specific tokens */
+    --cyan: 190 100% 50%;
+    --gold: 45 100% 51%;
+    --gradient-primary: linear-gradient(135deg, hsl(323 100% 50%), hsl(323 100% 45%));
+    --gradient-secondary: linear-gradient(135deg, hsl(45 100% 51%), hsl(45 100% 45%));
+    --gradient-hero: linear-gradient(135deg, hsl(323 100% 50%), hsl(270 80% 50%), hsl(190 100% 50%));
+    --shadow-card: 0 8px 30px -8px hsl(323 100% 50% / 0.25);
+    --shadow-card-hover: 0 12px 40px -10px hsl(323 100% 50% / 0.35);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    --background: 222 20% 6%;
+    --foreground: 0 0% 97%;
+
+    --card: 222 18% 12%;
+    --card-foreground: 0 0% 97%;
+
+    --popover: 222 18% 12%;
+    --popover-foreground: 0 0% 97%;
+
+    --primary: 323 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 18% 20%;
+    --secondary-foreground: 0 0% 97%;
+
+    --muted: 222 18% 20%;
+    --muted-foreground: 222 10% 60%;
+
+    --accent: 190 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 18% 20%;
+    --input: 222 18% 20%;
+    --ring: 323 100% 50%;
+
+    --cyan: 190 100% 50%;
+    --gold: 45 100% 51%;
+    --gradient-primary: linear-gradient(135deg, hsl(323 100% 50%), hsl(323 100% 45%));
+    --gradient-secondary: linear-gradient(135deg, hsl(45 100% 51%), hsl(45 100% 45%));
+    --gradient-hero: linear-gradient(135deg, hsl(323 100% 50%), hsl(270 80% 50%), hsl(190 100% 50%));
+    --shadow-card: 0 8px 30px -8px hsl(323 100% 50% / 0.25);
+    --shadow-card-hover: 0 12px 40px -10px hsl(323 100% 50% / 0.35);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .shadow-card-hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+  
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+
+  /* Badge styles for special badges */
+  .badge-cyan {
+    @apply inline-flex items-center rounded-full border border-transparent bg-cyan text-white px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .badge-gold {
+    @apply inline-flex items-center rounded-full border border-transparent bg-gold text-black px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .badge-verified {
+    @apply badge-cyan;
+  }
+
+  .badge-premium {
+    @apply badge-gold;
+  }
+}

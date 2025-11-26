@@ -1,0 +1,26 @@
+{
+  "name": "PersonalizedContentRequest",
+  "type": "object",
+  "properties": {
+    "requester_email": {"type": "string", "description": "Email of user requesting content"},
+    "creator_email": {"type": "string", "description": "Email of creator receiving request"},
+    "request_description": {"type": "string", "description": "Detailed description of requested content"},
+    "request_type": {"type": "string", "enum": ["photo", "video", "photo-set", "custom"], "description": "Type of content requested"},
+    "creator_price_love": {"type": "number", "description": "Price set by creator in LOVE tokens"},
+    "requester_budget": {"type": "number", "description": "Requester's stated budget"},
+    "status": {"type": "string", "enum": ["pending", "accepted", "declined", "in-progress", "completed", "paid", "cancelled"], "default": "pending", "description": "Request status"},
+    "delivery_date": {"type": "string", "format": "date-time", "description": "Expected or actual delivery date"},
+    "final_content_offer_id": {"type": "string", "description": "Reference to ContentOffer once completed"},
+    "creator_notes": {"type": "string", "description": "Notes from creator about the request"},
+    "requester_notes": {"type": "string", "description": "Additional notes from requester"},
+    "completed_at": {"type": "string", "format": "date-time", "description": "When request was completed"},
+    "paid_at": {"type": "string", "format": "date-time", "description": "When payment was received"}
+  },
+  "required": ["requester_email", "creator_email", "request_description", "request_type"],
+  "rls": {
+    "create": {"requester_email": "{{user.email}}"},
+    "read": {"$or": [{"requester_email": "{{user.email}}"}, {"creator_email": "{{user.email}}"}]},
+    "update": {"$or": [{"requester_email": "{{user.email}}"}, {"creator_email": "{{user.email}}"}]},
+    "delete": {"$or": [{"requester_email": "{{user.email}}"}, {"creator_email": "{{user.email}}"}]}
+  }
+}

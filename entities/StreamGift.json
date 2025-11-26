@@ -1,0 +1,20 @@
+{
+  "name": "StreamGift",
+  "type": "object",
+  "properties": {
+    "stream_id": {"type": "string", "description": "ID of live stream"},
+    "sender_email": {"type": "string", "description": "Email of gift sender"},
+    "creator_email": {"type": "string", "description": "Email of creator"},
+    "gift_type": {"type": "string", "enum": ["heart", "star", "fire", "crown", "diamond", "rocket"], "description": "Type of gift"},
+    "amount": {"type": "number", "description": "Amount in LOVE tokens"},
+    "message": {"type": "string", "description": "Optional message"},
+    "is_anonymous": {"type": "boolean", "default": false, "description": "Whether gift is anonymous"}
+  },
+  "required": ["stream_id", "sender_email", "creator_email", "gift_type", "amount"],
+  "rls": {
+    "create": {"sender_email": "{{user.email}}"},
+    "read": {},
+    "update": {"user_condition": {"role": "admin"}},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

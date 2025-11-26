@@ -1,0 +1,26 @@
+{
+  "name": "CreatorVerificationRequest",
+  "type": "object",
+  "properties": {
+    "user_email": {"type": "string", "description": "Email of user requesting verification"},
+    "verification_level": {"type": "string", "enum": ["basic", "premium", "elite"], "default": "basic", "description": "Level of verification requested"},
+    "status": {"type": "string", "enum": ["pending", "under-review", "approved", "rejected"], "default": "pending", "description": "Request status"},
+    "id_document_url": {"type": "string", "description": "URL to ID document"},
+    "selfie_verification_url": {"type": "string", "description": "URL to selfie with ID"},
+    "social_media_links": {"type": "array", "items": {"type": "string"}, "description": "Links to social media profiles"},
+    "portfolio_links": {"type": "array", "items": {"type": "string"}, "description": "Portfolio or previous work links"},
+    "subscriber_count": {"type": "number", "description": "Number of subscribers on other platforms"},
+    "bio": {"type": "string", "description": "Creator bio/description"},
+    "rejection_reason": {"type": "string", "description": "Reason for rejection if rejected"},
+    "reviewed_by": {"type": "string", "description": "Admin who reviewed the request"},
+    "reviewed_at": {"type": "string", "format": "date-time", "description": "When request was reviewed"},
+    "notes": {"type": "string", "description": "Additional notes from admin"}
+  },
+  "required": ["user_email", "verification_level"],
+  "rls": {
+    "create": {"user_email": "{{user.email}}"},
+    "read": {"$or": [{"user_email": "{{user.email}}"}, {"user_condition": {"role": "admin"}}]},
+    "update": {"user_condition": {"role": "admin"}},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

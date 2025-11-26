@@ -1,0 +1,18 @@
+{
+  "name": "ProfileView",
+  "type": "object",
+  "properties": {
+    "profile_email": {"type": "string", "description": "Email of profile being viewed"},
+    "viewer_email": {"type": "string", "description": "Email of viewer"},
+    "view_source": {"type": "string", "enum": ["discover", "matches", "search", "gallery", "live-stream", "event", "direct"], "description": "Where the view came from"},
+    "duration_seconds": {"type": "number", "description": "How long they viewed the profile"},
+    "interacted": {"type": "boolean", "default": false, "description": "Whether viewer liked, passed, or messaged"}
+  },
+  "required": ["profile_email", "viewer_email", "view_source"],
+  "rls": {
+    "create": {"viewer_email": "{{user.email}}"},
+    "read": {"profile_email": "{{user.email}}"},
+    "update": {"viewer_email": "{{user.email}}"},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

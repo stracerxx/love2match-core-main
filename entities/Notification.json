@@ -1,0 +1,24 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "user_email": {"type": "string", "description": "Email of user receiving notification"},
+    "type": {"type": "string", "enum": ["message", "match", "event_reminder", "event_rsvp", "like", "gift", "token", "system"], "description": "Type of notification"},
+    "title": {"type": "string", "description": "Notification title"},
+    "body": {"type": "string", "description": "Notification body text"},
+    "action_url": {"type": "string", "description": "URL to navigate to when clicked"},
+    "related_user_email": {"type": "string", "description": "Email of related user (for matches, messages, etc)"},
+    "related_entity_type": {"type": "string", "description": "Type of related entity (Match, Message, Event, etc)"},
+    "related_entity_id": {"type": "string", "description": "ID of related entity"},
+    "is_read": {"type": "boolean", "default": false, "description": "Whether notification has been read"},
+    "read_at": {"type": "string", "format": "date-time", "description": "When notification was read"},
+    "image_url": {"type": "string", "description": "Optional image for notification"}
+  },
+  "required": ["user_email", "type", "title", "body"],
+  "rls": {
+    "create": {"user_condition": {"role": "admin"}},
+    "read": {"user_email": "{{user.email}}"},
+    "update": {"user_email": "{{user.email}}"},
+    "delete": {"user_email": "{{user.email}}"}
+  }
+}

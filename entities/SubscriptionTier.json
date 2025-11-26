@@ -1,0 +1,23 @@
+{
+  "name": "SubscriptionTier",
+  "type": "object",
+  "properties": {
+    "creator_email": {"type": "string", "description": "Email of content creator"},
+    "name": {"type": "string", "description": "Tier name (e.g., Basic Fan, Premium Access, VIP)"},
+    "description": {"type": "string", "description": "What benefits/content are included"},
+    "price_love": {"type": "number", "description": "Cost in LOVE tokens per billing cycle"},
+    "duration_type": {"type": "string", "enum": ["monthly", "quarterly", "annual"], "default": "monthly", "description": "Billing frequency"},
+    "access_level": {"type": "number", "description": "Numerical tier level (1=basic, 2=premium, 3=vip)"},
+    "perks": {"type": "array", "items": {"type": "string"}, "description": "List of perks included in this tier"},
+    "max_subscribers": {"type": "number", "description": "Maximum number of subscribers (optional limit)"},
+    "current_subscribers": {"type": "number", "default": 0, "description": "Current subscriber count"},
+    "is_active": {"type": "boolean", "default": true, "description": "Whether tier is currently offered"}
+  },
+  "required": ["creator_email", "name", "price_love", "access_level"],
+  "rls": {
+    "create": {"created_by": "{{user.email}}"},
+    "read": {},
+    "update": {"creator_email": "{{user.email}}"},
+    "delete": {"creator_email": "{{user.email}}"}
+  }
+}

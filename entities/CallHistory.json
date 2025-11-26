@@ -1,0 +1,21 @@
+{
+  "name": "CallHistory",
+  "type": "object",
+  "properties": {
+    "match_id": {"type": "string", "description": "ID of the match"},
+    "caller_email": {"type": "string", "description": "Email of person who initiated the call"},
+    "receiver_email": {"type": "string", "description": "Email of person who received the call"},
+    "call_type": {"type": "string", "enum": ["video", "audio"], "description": "Type of call"},
+    "status": {"type": "string", "enum": ["completed", "missed", "declined", "failed"], "description": "Call status"},
+    "duration": {"type": "number", "description": "Call duration in seconds"},
+    "started_at": {"type": "string", "format": "date-time", "description": "When the call started"},
+    "ended_at": {"type": "string", "format": "date-time", "description": "When the call ended"}
+  },
+  "required": ["match_id", "caller_email", "receiver_email", "call_type", "status"],
+  "rls": {
+    "create": {"$or": [{"caller_email": "{{user.email}}"}, {"receiver_email": "{{user.email}}"}]},
+    "read": {"$or": [{"caller_email": "{{user.email}}"}, {"receiver_email": "{{user.email}}"}]},
+    "update": {"$or": [{"caller_email": "{{user.email}}"}, {"receiver_email": "{{user.email}}"}]},
+    "delete": {"user_condition": {"role": "admin"}}
+  }
+}

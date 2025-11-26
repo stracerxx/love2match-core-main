@@ -1,0 +1,24 @@
+{
+  "name": "SubscriptionBox",
+  "type": "object",
+  "properties": {
+    "creator_email": {"type": "string", "description": "Email of creator"},
+    "name": {"type": "string", "description": "Box name"},
+    "description": {"type": "string", "description": "Box description"},
+    "price": {"type": "number", "description": "Price in LOVE tokens"},
+    "content_items": {"type": "array", "items": {"type": "object", "properties": {"content_id": {"type": "string"}, "content_type": {"type": "string"}, "title": {"type": "string"}, "preview_url": {"type": "string"}}}, "description": "Curated content items in the box"},
+    "thumbnail_url": {"type": "string", "description": "Box thumbnail"},
+    "tier_required": {"type": "string", "enum": ["none", "plus", "premium", "vip"], "default": "none", "description": "Required membership tier"},
+    "is_active": {"type": "boolean", "default": true, "description": "Whether box is available for purchase"},
+    "is_limited": {"type": "boolean", "default": false, "description": "Whether box has limited quantity"},
+    "quantity_available": {"type": "number", "description": "Available quantity if limited"},
+    "purchases_count": {"type": "number", "default": 0, "description": "Number of purchases"}
+  },
+  "required": ["creator_email", "name", "price"],
+  "rls": {
+    "create": {"creator_email": "{{user.email}}"},
+    "read": {},
+    "update": {"creator_email": "{{user.email}}"},
+    "delete": {"creator_email": "{{user.email}}"}
+  }
+}

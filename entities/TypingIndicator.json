@@ -1,0 +1,17 @@
+{
+  "name": "TypingIndicator",
+  "type": "object",
+  "properties": {
+    "match_id": {"type": "string", "description": "ID of the match"},
+    "user_email": {"type": "string", "description": "Email of user who is typing"},
+    "is_typing": {"type": "boolean", "default": true, "description": "Whether user is currently typing"},
+    "expires_at": {"type": "string", "format": "date-time", "description": "When this indicator expires"}
+  },
+  "required": ["match_id", "user_email"],
+  "rls": {
+    "create": {"user_email": "{{user.email}}"},
+    "read": {"$or": [{"user_email": "{{user.email}}"}, {"user_condition": {"email": {"$ne": "{{user.email}}"}}}]},
+    "update": {"user_email": "{{user.email}}"},
+    "delete": {"user_email": "{{user.email}}"}
+  }
+}

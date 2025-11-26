@@ -1,0 +1,30 @@
+{
+  "name": "PremiumContent",
+  "type": "object",
+  "properties": {
+    "creator_email": {"type": "string", "description": "Email of the content creator"},
+    "title": {"type": "string", "description": "Content title"},
+    "description": {"type": "string", "description": "Content description"},
+    "content_type": {"type": "string", "enum": ["photo", "video", "audio", "photo-set"], "description": "Type of content"},
+    "media_url": {"type": "string", "description": "Primary media URL"},
+    "media_urls": {"type": "array", "items": {"type": "string"}, "description": "Array of media URLs for sets"},
+    "thumbnail_url": {"type": "string", "description": "Thumbnail/preview image"},
+    "access_tier": {"type": "string", "enum": ["plus", "premium", "vip"], "default": "plus", "description": "Minimum membership tier required"},
+    "category": {"type": "string", "enum": ["lifestyle", "fitness", "fashion", "beauty", "travel", "food", "art", "music", "adult", "other"], "description": "Content category"},
+    "tags": {"type": "array", "items": {"type": "string"}, "description": "Content tags"},
+    "views_count": {"type": "number", "default": 0, "description": "Number of views"},
+    "likes_count": {"type": "number", "default": 0, "description": "Number of likes"},
+    "is_published": {"type": "boolean", "default": true, "description": "Whether content is published"},
+    "is_featured": {"type": "boolean", "default": false, "description": "Whether content is featured"},
+    "published_at": {"type": "string", "format": "date-time", "description": "When content was published"},
+    "duration": {"type": "number", "description": "Duration in seconds for video/audio"},
+    "file_size": {"type": "number", "description": "File size in bytes"}
+  },
+  "required": ["creator_email", "title", "content_type", "media_url"],
+  "rls": {
+    "create": {"creator_email": "{{user.email}}"},
+    "read": {},
+    "update": {"creator_email": "{{user.email}}"},
+    "delete": {"creator_email": "{{user.email}}"}
+  }
+}

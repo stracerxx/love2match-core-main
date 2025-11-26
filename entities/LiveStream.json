@@ -1,0 +1,28 @@
+{
+  "name": "LiveStream",
+  "type": "object",
+  "properties": {
+    "creator_email": {"type": "string", "description": "Email of creator streaming"},
+    "title": {"type": "string", "description": "Stream title"},
+    "description": {"type": "string", "description": "Stream description"},
+    "thumbnail_url": {"type": "string", "description": "Stream thumbnail"},
+    "status": {"type": "string", "enum": ["scheduled", "live", "ended"], "default": "scheduled", "description": "Stream status"},
+    "scheduled_start": {"type": "string", "format": "date-time", "description": "Scheduled start time"},
+    "started_at": {"type": "string", "format": "date-time", "description": "Actual start time"},
+    "ended_at": {"type": "string", "format": "date-time", "description": "End time"},
+    "access_type": {"type": "string", "enum": ["free", "paid", "subscribers-only"], "default": "free", "description": "Access type"},
+    "access_price": {"type": "number", "description": "Price in LOVE tokens if paid"},
+    "viewer_count": {"type": "number", "default": 0, "description": "Current viewer count"},
+    "peak_viewers": {"type": "number", "default": 0, "description": "Peak concurrent viewers"},
+    "total_gifts_received": {"type": "number", "default": 0, "description": "Total LOVE tokens from gifts"},
+    "stream_key": {"type": "string", "description": "Stream key for broadcasting"},
+    "category": {"type": "string", "enum": ["chat", "qa", "performance", "tutorial", "gaming", "fitness", "cooking", "adult", "other"], "description": "Stream category"}
+  },
+  "required": ["creator_email", "title"],
+  "rls": {
+    "create": {"creator_email": "{{user.email}}"},
+    "read": {},
+    "update": {"creator_email": "{{user.email}}"},
+    "delete": {"creator_email": "{{user.email}}"}
+  }
+}

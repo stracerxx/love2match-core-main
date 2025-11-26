@@ -1,0 +1,20 @@
+{
+  "name": "Match",
+  "type": "object",
+  "properties": {
+    "user1_email": {"type": "string", "description": "First user's email"},
+    "user2_email": {"type": "string", "description": "Second user's email"},
+    "status": {"type": "string", "enum": ["pending", "matched", "unmatched"], "default": "pending", "description": "Match status"},
+    "liked_by": {"type": "string", "description": "Email of user who liked"},
+    "matched_at": {"type": "string", "format": "date-time", "description": "When mutual match occurred"},
+    "unmatched_by": {"type": "string", "description": "Email of user who unmatched"},
+    "unmatched_at": {"type": "string", "format": "date-time", "description": "When unmatch occurred"}
+  },
+  "required": ["user1_email", "user2_email", "status"],
+  "rls": {
+    "create": {"created_by": "{{user.email}}"},
+    "read": {"$or": [{"user1_email": "{{user.email}}"}, {"user2_email": "{{user.email}}"}]},
+    "update": {"$or": [{"user1_email": "{{user.email}}"}, {"user2_email": "{{user.email}}"}]},
+    "delete": {"$or": [{"user1_email": "{{user.email}}"}, {"user2_email": "{{user.email}}"}, {"user_condition": {"role": "admin"}}]}
+  }
+}
