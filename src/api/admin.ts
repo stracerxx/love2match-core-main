@@ -47,12 +47,12 @@ export const adminApi = {
     if (love2Error) throw love2Error;
     const total_love2_supply = love2Data?.reduce((sum, user) => sum + (user.love2_balance || 0), 0) || 0;
 
-    // Get pending swap requests
-    const { count: pendingSwapRequests, error: swapError } = await supabase
-      .from('swap_requests')
+    // Get pending conversion requests
+    const { count: pendingConversionRequests, error: conversionError } = await supabase
+      .from('conversion_requests')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pending');
-    if (swapError) throw swapError;
+    if (conversionError) throw conversionError;
 
     // For now, return simplified analytics
     return {
@@ -61,7 +61,7 @@ export const adminApi = {
       total_love2_supply,
       total_love_earned: 0, // Would need transaction data
       total_love_spent: 0, // Would need transaction data
-      pending_swap_requests: pendingSwapRequests || 0,
+      pending_swap_requests: pendingConversionRequests || 0,
       pending_verifications: 0 // Would need verification requests table
     };
   },
@@ -87,56 +87,123 @@ export const adminApi = {
     if (error) throw error;
   },
 
-  // Get pending swap requests
+  // Get pending conversion requests (LOVE to LOVE2)
   async getPendingExchanges(): Promise<ExchangeRequest[]> {
     const { data, error } = await supabase
-      .from('swap_requests')
-      .select('*')
+      .from('conversion_requests')
+      .select(`
+        *,
+        users!conversion_requests_user_id_fkey(email)
+      `)
       .eq('status', 'pending')
-      .order('created_at', { ascending: true });
+      .order('requested_at', { ascending: true });
 
     if (error) throw error;
-    
-    // Transform data to match expected format
+
     return data?.map(request => ({
       id: request.id,
       user_id: request.user_id,
-      user_email: 'User', // We'll need to join with users table for email
-      from_token: 'LOVE',
-      to_token: 'LOVE2',
-      amount: request.love_amount,
+      user_email: request.users?.email || 'Unknown',
+      from_token: request.from_token,
+      to_token: request.to_token,
+      amount: Number(request.amount),
       status: request.status,
-      created_at: request.created_at
+      created_at: request.requested_at
     })) || [];
   },
 
-  // Approve exchange using direct update
+  // Approve conversion request
   async approveExchange(requestId: string) {
-    const { error } = await supabase
-      .from('swap_requests')
-      .update({ 
-        status: 'approved',
-        approved_by: (await supabase.auth.getUser()).data.user?.id,
+    const { data: request, error: fetchError } = await supabase
+.from('conversion_requests')
+    .select('*')
+      .eq('id', requestId)
+      .single();
+      
+      if (fetchError) throw fetchError;
+if (!request) throw new Error('Conversion request not found');
+    
+    const { data: user, error: userError } = await supabase
+.from('users')
+    .select('love_balance, love2_balance')
+      .eq('id', request.user_id)
+      .single();
+      
+      if (userError) throw userError;
+if (!user) throw new Error('User not found');
+    
+    const loveBalance = Number(user.love_balance || 0);
+const love2Balance = Number(user.love2_balance || 0);
+    const amount = Number(request.amount);
+    
+    if (loveBalance < amount) {
+throw new Error('Insufficient LOVE balance');
+    }
+      
+    const newLoveBalance = loveBalance - amount;
+const newLove2Balance = love2Balance + amount;
+    
+    const { error: updateUserError } = await supabase
+.from('users')
+    .update({
+      love_balance: newLoveBalance,
+      love2_balance: newLove2Balance
+        })
+        .eq('id', request.user_id);
+      
+      if (updateUserError) throw updateUserError;
+
+    const currentUser = await supabase.auth.getUser();
+const { error: updateRequestError } = await supabase
+    .from('conversion_requests')
+    .update({
+      status: 'approved',
+      reviewed_at: new Date().toISOString(),
+        reviewed_by: currentUser.data.user?.id || null,
         updated_at: new Date().toISOString()
-      })
-      .eq('id', requestId);
+        })
+        .eq('id', requestId);
+      
+      if (updateRequestError) throw updateRequestError;
 
-    if (error) throw error;
-  },
-
-  // Reject exchange using direct update
+    await supabase.from('token_transactions').insert([
+{
+    user_id: request.user_id,
+    type: 'spend',
+      token_type: 'LOVE',
+        amount: amount,
+        balance_before: loveBalance,
+        balance_after: newLoveBalance,
+        description: `Converted to LOVE2 (Request #${requestId.substring(0, 8)})`
+        },
+        {
+        user_id: request.user_id,
+      type: 'earn',
+      token_type: 'LOVE2',
+        amount: amount,
+        balance_before: love2Balance,
+        balance_after: newLove2Balance,
+        description: `Converted from LOVE (Request #${requestId.substring(0, 8)})`
+        }
+        ]);
+        },
+      
+    // Reject conversion request
   async rejectExchange(requestId: string) {
-    const { error } = await supabase
-      .from('swap_requests')
-      .update({ 
-        status: 'rejected',
-        approved_by: (await supabase.auth.getUser()).data.user?.id,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', requestId);
-
-    if (error) throw error;
-  },
+const currentUser = await supabase.auth.getUser();
+  
+  const { error } = await supabase
+    .from('conversion_requests')
+    .update({
+status: 'rejected',
+    reviewed_at: new Date().toISOString(),
+      reviewed_by: currentUser.data.user?.id || null,
+      updated_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+        
+        if (error) throw error;
+      },
 
   // Get user statistics
   async getUserStats() {
@@ -150,8 +217,7 @@ export const adminApi = {
     const totalUsers = data?.length || 0;
     const adminUsers = data?.filter(user => user.role === 'admin').length || 0;
     const memberUsers = data?.filter(user => user.role === 'member').length || 0;
-    
-    // Calculate new users in last 7 days
+
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const newUsers = data?.filter(user => new Date(user.created_date) > sevenDaysAgo).length || 0;

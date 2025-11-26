@@ -99,6 +99,28 @@ export const walletApi = {
 
     return { before, after };
   },
+
+  async exchangeTokens(userId: string, from: 'love', to: 'love2', amount: number) {
+    const { data: user, error: getErr } = await supabase
+      .from('users')
+      .select('love_balance')
+      .eq('id', userId)
+      .single();
+    if (getErr) throw getErr;
+
+    const balance = Number(user?.love_balance || 0);
+    if (balance < amount) throw new Error('Insufficient LOVE balance');
+
+    const { error: insertErr } = await supabase.from('conversion_requests').insert({
+      user_id: userId,
+      from_token: from.toUpperCase(),
+      to_token: to.toUpperCase(),
+      amount,
+      status: 'pending',
+      requested_at: new Date().toISOString(),
+    });
+    if (insertErr) throw insertErr;
+  },
 };
 
 export default walletApi;

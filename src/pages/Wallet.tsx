@@ -13,6 +13,7 @@ import blockchainApi, { LOVE_TOKEN_MINT } from '@/api/blockchain';
 import { format } from 'date-fns';
 import { AlertCircle, Copy, CheckCircle, ArrowRightLeft, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ConversionHistory } from '@/components/wallet/ConversionHistory';
 
 const Wallet = () => {
   const { user } = useAuth();
@@ -151,7 +152,10 @@ const Wallet = () => {
           </CardContent>
         </Card>
 
+        {user && <ConversionHistory userId={user.id} />}
+
         <Card className="shadow-card border-cyan-500/30">
+
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <span>Solana Integration</span>

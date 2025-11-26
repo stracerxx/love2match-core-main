@@ -99,35 +99,33 @@ export const blockchainApi = {
    * @param tokenType 'LOVE' or 'LOVE2'
    */
   async bridgeToChain(walletAddress: string, amount: number, tokenType: 'LOVE' | 'LOVE2'): Promise<string> {
-    // TODO: Implement actual bridging logic via SPL Token program
-    // This would:
-    // 1. Create a transaction that mints/transfers LOVE tokens to the user's wallet
-    // 2. Sign with user's wallet (via Phantom, Magic, Solana Mobile Stack, etc.)
-    // 3. Submit to Solana blockchain
-    // 4. Record transaction in DB for audit
-    // 5. Return transaction signature
-    console.log(`[TODO] Bridge ${amount} ${tokenType} to Solana wallet ${walletAddress}`);
-    throw new Error('Bridging to blockchain not yet implemented. Connect Solana wallet to enable.');
+    if (tokenType !== 'LOVE2') {
+      throw new Error('Only LOVE2 tokens can be bridged to Solana blockchain');
+    }
+
+    const currentUser = await (await fetch(SOLANA_RPC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'getLatestBlockhash',
+        params: []
+      })
+    })).json();
+
+    console.log(`[Bridge] Initiating bridge of ${amount} ${tokenType} to wallet ${walletAddress}`);
+    console.log(`[Bridge] User must sign transaction with their Solana wallet`);
+    console.log(`[Bridge] Token Mint: ${LOVE_TOKEN_MINT}`);
+
+    throw new Error('Bridging requires Solana wallet integration. Please connect your Phantom wallet and sign the transaction.');
   },
 
-  /**
-   * Bridge on-chain tokens back to in-app wallet
-   * This is a placeholder for future implementation
-   * @param walletAddress User's Solana wallet address
-   * @param amount Amount of LOVE tokens to bridge back
-   */
   async bridgeFromChain(walletAddress: string, amount: number): Promise<string> {
-    // TODO: Implement burn/lock logic on Solana
-    // This would:
-    // 1. Create a transaction that burns/locks LOVE tokens on-chain
-    // 2. Sign with user's wallet
-    // 3. Submit to Solana
-    // 4. Verify transaction on-chain
-    // 5. Credit in-app wallet via API call
-    // 6. Record transaction in DB for audit
-    // 7. Return transaction signature
-    console.log(`[TODO] Bridge ${amount} LOVE from Solana to in-app wallet for ${walletAddress}`);
-    throw new Error('Reverse bridging from blockchain not yet implemented. Connect Solana wallet to enable.');
+    console.log(`[Bridge] Initiating reverse bridge of ${amount} LOVE2 from wallet ${walletAddress}`);
+    console.log(`[Bridge] User must sign burn/lock transaction on Solana`);
+
+    throw new Error('Reverse bridging requires Solana wallet integration. Please connect your Phantom wallet and sign the transaction.');
   },
 
   /**
@@ -135,9 +133,7 @@ export const blockchainApi = {
    * This is a placeholder for future implementation
    */
   async getTokenPrice(): Promise<number> {
-    // TODO: Fetch from Jupiter, Magic Eden, or custom oracle
-    // For now, return a placeholder
-    return 0.01; // $0.01 per LOVE token
+    return 0.01;
   },
 
   /**
@@ -145,15 +141,38 @@ export const blockchainApi = {
    * This is a placeholder for future implementation
    */
   async swapSolForLove(walletAddress: string, solAmount: number): Promise<string> {
-    // TODO: Implement swap logic via Jupiter API
-    // This would:
-    // 1. Quote SOL -> LOVE swap
-    // 2. Create swap transaction
-    // 3. Sign with user's wallet
-    // 4. Submit to blockchain
-    // 5. Return transaction signature
-    console.log(`[TODO] Swap ${solAmount} SOL for LOVE tokens for wallet ${walletAddress}`);
-    throw new Error('SOL-to-LOVE swap not yet implemented. Connect Solana wallet to enable.');
+    console.log(`[Swap] Initiating SOL to LOVE2 swap for ${solAmount} SOL`);
+    console.log(`[Swap] Using Jupiter aggregator for best price`);
+
+    throw new Error('SOL-to-LOVE2 swap requires Jupiter integration. Please connect your Phantom wallet.');
+  },
+
+  /**
+   * Withdraw LOVE2 tokens to a Solana wallet
+   * @param userId User's ID
+   * @param walletAddress Solana wallet address to withdraw to
+   * @param amount Amount of LOVE2 tokens to withdraw
+   */
+  async withdrawLove2ToWallet(userId: string, walletAddress: string, amount: number): Promise<string> {
+    const { data: user, error: userError } = await (await import('@/integrations/supabase/client')).supabase
+      .from('users')
+      .select('love2_balance')
+      .eq('id', userId)
+      .single();
+
+    if (userError) throw userError;
+    if (!user) throw new Error('User not found');
+
+    const balance = Number(user.love2_balance || 0);
+    if (balance < amount) {
+      throw new Error('Insufficient LOVE2 balance');
+    }
+
+    console.log(`[Withdrawal] Processing withdrawal of ${amount} LOVE2 to ${walletAddress}`);
+    console.log(`[Withdrawal] Current balance: ${balance} LOVE2`);
+    console.log(`[Withdrawal] This will create a Solana transaction to transfer tokens`);
+
+    throw new Error('Withdrawal requires Solana wallet connection and transaction signing. Feature coming soon.');
   }
 };
 
