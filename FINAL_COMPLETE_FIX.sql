@@ -6,7 +6,7 @@ ALTER TABLE IF EXISTS public.token_transactions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.swap_requests DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.likes DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.threads DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.thread_participants DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.thread                                      _participants DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.messages DISABLE ROW LEVEL SECURITY;
 
 -- Step 2: Drop ALL problematic RLS policies

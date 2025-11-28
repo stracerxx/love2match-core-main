@@ -7,7 +7,7 @@ SELECT id, email, role FROM public.users LIMIT 10;
 -- Step 2: Update an existing user to be admin (replace 'user@example.com' with actual email)
 UPDATE public.users 
 SET role = 'admin' 
-WHERE email = 'user@example.com';
+WHERE email = 'shane@thecyberdyne.com';
 
 -- Step 3: Alternative - Create a new admin user if needed
 -- First sign up normally through the app, then run:
@@ -20,7 +20,7 @@ SELECT id, email, role FROM public.users WHERE role = 'admin';
 -- 1. Sign in with the admin user account
 -- 2. Look for the Shield icon (⚔️) in the navigation
 -- 3. Click on it to access the admin dashboard at: http://localhost:8080/admin
-
+                                                                                                                                                                                                                                 
 -- If you don't see the admin link, check that:
 -- 1. The user has role = 'admin' in the users table
 -- 2. You're signed in with that user account

@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Peer from 'simple-peer';
 import { Button } from './ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useToast } from './ui/use-toast';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Phone } from 'lucide-react';
 
 interface VideoCallInterfaceProps {
   matchId: string;
@@ -11,6 +14,14 @@ interface VideoCallInterfaceProps {
   receiverName?: string;
   onCallEnd?: (duration: number, status: string) => void;
   initialCallType?: 'video' | 'audio';
+}
+
+interface SignalData {
+  type: 'offer' | 'answer';
+  signal: Peer.SignalData;
+  from: string;
+  to: string;
+  callId: string;
 }
 
 export const VideoCallInterface: React.FC<VideoCallInterfaceProps> = ({
@@ -27,10 +38,13 @@ export const VideoCallInterface: React.FC<VideoCallInterfaceProps> = ({
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-  
+  const [isInitiator, setIsInitiator] = useState(false);
+
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const durationIntervalRef = useRef<NodeJS.Timeout>();
+  const peerRef = useRef<Peer.Instance | null>(null);
+  const callIdRef = useRef<string>(`call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -64,38 +78,189 @@ export const VideoCallInterface: React.FC<VideoCallInterfaceProps> = ({
     }
   }, [remoteStream]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel(`video_call_${matchId}`)
+      .on(
+        'broadcast',
+        { event: 'signal' },
+        (payload: { payload: SignalData }) => {
+          const data = payload.payload;
+          if (data.to === user?.id && data.callId === callIdRef.current) {
+            if (data.type === 'offer' && !peerRef.current) {
+              answerCall(data.signal);
+            } else if (data.type === 'answer' && peerRef.current) {
+              peerRef.current.signal(data.signal);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (peerRef.current) {
+        peerRef.current.destroy();
+      }
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [matchId, user?.id]);
+
   const startCall = async () => {
     try {
       setCallStatus('connecting');
-      
-      // Get user media
+      setIsInitiator(true);
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: callType === 'video',
-        audio: true
+        video: callType === 'video' ? { width: 1280, height: 720 } : false,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       });
-      
+
       setLocalStream(stream);
-      
-      // Mock connection establishment
-      setTimeout(() => {
+
+      const peer = new Peer({
+        initiator: true,
+        trickle: false,
+        stream: stream,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
+          ]
+        }
+      });
+
+      peer.on('signal', (signal) => {
+        supabase.channel(`video_call_${matchId}`).send({
+          type: 'broadcast',
+          event: 'signal',
+          payload: {
+            type: 'offer',
+            signal,
+            from: user?.id,
+            to: matchId,
+            callId: callIdRef.current
+          } as SignalData
+        });
+      });
+
+      peer.on('stream', (remoteStream) => {
+        setRemoteStream(remoteStream);
         setCallStatus('active');
         toast({
           title: 'Call Connected',
           description: `Connected to ${receiverName || receiverEmail}`,
         });
-        
-        // Mock remote stream (in real app, this would come from WebRTC)
-        setTimeout(() => {
-          // Simulate remote stream
-          setRemoteStream(stream.clone());
-        }, 1000);
-      }, 2000);
+      });
+
+      peer.on('error', (err) => {
+        console.error('Peer error:', err);
+        toast({
+          title: 'Connection Error',
+          description: 'Failed to establish connection',
+          variant: 'destructive'
+        });
+        endCall('failed');
+      });
+
+      peer.on('close', () => {
+        endCall('completed');
+      });
+
+      peerRef.current = peer;
 
     } catch (error) {
       console.error('Error starting call:', error);
       toast({
         title: 'Call Failed',
-        description: 'Could not access camera/microphone',
+        description: 'Could not access camera/microphone. Please check permissions.',
+        variant: 'destructive'
+      });
+      setCallStatus('idle');
+    }
+  };
+
+  const answerCall = async (incomingSignal: Peer.SignalData) => {
+    try {
+      setCallStatus('connecting');
+      setIsInitiator(false);
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: callType === 'video' ? { width: 1280, height: 720 } : false,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+
+      setLocalStream(stream);
+
+      const peer = new Peer({
+        initiator: false,
+        trickle: false,
+        stream: stream,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
+          ]
+        }
+      });
+
+      peer.on('signal', (signal) => {
+        supabase.channel(`video_call_${matchId}`).send({
+          type: 'broadcast',
+          event: 'signal',
+          payload: {
+            type: 'answer',
+            signal,
+            from: user?.id,
+            to: matchId,
+            callId: callIdRef.current
+          } as SignalData
+        });
+      });
+
+      peer.on('stream', (remoteStream) => {
+        setRemoteStream(remoteStream);
+        setCallStatus('active');
+        toast({
+          title: 'Call Connected',
+          description: `Connected to ${receiverName || receiverEmail}`,
+        });
+      });
+
+      peer.on('error', (err) => {
+        console.error('Peer error:', err);
+        toast({
+          title: 'Connection Error',
+          description: 'Failed to establish connection',
+          variant: 'destructive'
+        });
+        endCall('failed');
+      });
+
+      peer.on('close', () => {
+        endCall('completed');
+      });
+
+      peer.signal(incomingSignal);
+      peerRef.current = peer;
+
+    } catch (error) {
+      console.error('Error answering call:', error);
+      toast({
+        title: 'Call Failed',
+        description: 'Could not access camera/microphone. Please check permissions.',
         variant: 'destructive'
       });
       setCallStatus('idle');
@@ -103,16 +268,24 @@ export const VideoCallInterface: React.FC<VideoCallInterfaceProps> = ({
   };
 
   const endCall = (status: 'completed' | 'missed' | 'declined' | 'failed' = 'completed') => {
+    if (peerRef.current) {
+      peerRef.current.destroy();
+      peerRef.current = null;
+    }
+
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
+      setLocalStream(null);
     }
+
     if (remoteStream) {
       remoteStream.getTracks().forEach(track => track.stop());
+      setRemoteStream(null);
     }
-    
+
     setCallStatus('ended');
     onCallEnd?.(callDuration, status);
-    
+
     toast({
       title: 'Call Ended',
       description: `Call duration: ${formatDuration(callDuration)}`,
@@ -145,20 +318,8 @@ export const VideoCallInterface: React.FC<VideoCallInterfaceProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const switchCallType = (newType: 'video' | 'audio') => {
-    if (callStatus === 'active') {
-      toast({
-        title: 'Cannot Switch',
-        description: 'Please end the current call to switch type',
-      });
-      return;
-    }
-    setCallType(newType);
-  };
-
   return (
     <div className="w-full max-w-4xl mx-auto">
-      {/* Call Status Header */}
       <Card className="mb-4">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
@@ -187,94 +348,67 @@ export const VideoCallInterface: React.FC<VideoCallInterfaceProps> = ({
         </CardContent>
       </Card>
 
-      {/* Video/Audio Display */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        {/* Local Video */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">You</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="aspect-video bg-black rounded-lg relative">
+            <div className="aspect-video bg-black rounded-lg relative overflow-hidden">
               {callType === 'video' ? (
                 <video
                   ref={localVideoRef}
                   autoPlay
                   muted
                   playsInline
-                  className="w-full h-full object-cover rounded-lg"
+                  className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-muted rounded-lg">
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
                   <div className="text-center">
-                    <div className="text-6xl mb-2">🎤</div>
-                    <p className="text-muted-foreground">Audio Only</p>
-                    <p className="text-sm text-muted-foreground">{user?.email}</p>
+                    <Mic className="h-16 w-16 mx-auto mb-2 text-primary" />
+                    <p className="text-sm text-muted-foreground">Audio Only</p>
                   </div>
                 </div>
               )}
-              
-              {/* Status Overlays */}
               {isVideoOff && callType === 'video' && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <div className="text-white text-center">
-                    <div className="text-2xl mb-1">📷</div>
-                    <p className="text-sm">Video Off</p>
-                  </div>
-                </div>
-              )}
-              
-              {isMuted && (
-                <div className="absolute top-2 right-2 bg-black/70 rounded-full p-1">
-                  <div className="text-white text-xs">🔇</div>
+                <div className="absolute inset-0 bg-black flex items-center justify-center">
+                  <VideoOff className="h-16 w-16 text-white" />
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Remote Video */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">{receiverName || receiverEmail}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="aspect-video bg-black rounded-lg relative">
-              {callStatus === 'active' && callType === 'video' ? (
-                <video
-                  ref={remoteVideoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-cover rounded-lg"
-                />
+            <div className="aspect-video bg-black rounded-lg relative overflow-hidden">
+              {callStatus === 'active' && remoteStream ? (
+                callType === 'video' ? (
+                  <video
+                    ref={remoteVideoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary/20 to-secondary/5">
+                    <div className="text-center">
+                      <Mic className="h-16 w-16 mx-auto mb-2 text-secondary" />
+                      <p className="text-sm text-muted-foreground">Audio Only</p>
+                    </div>
+                  </div>
+                )
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-muted rounded-lg">
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted/50 to-muted/20">
                   <div className="text-center">
-                    {callStatus === 'connecting' && (
-                      <>
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                        <p className="text-muted-foreground">Connecting...</p>
-                      </>
-                    )}
-                    {callStatus === 'idle' && (
-                      <>
-                        <div className="text-6xl mb-2">👤</div>
-                        <p className="text-muted-foreground">Waiting to connect</p>
-                      </>
-                    )}
-                    {callStatus === 'ended' && (
-                      <>
-                        <div className="text-6xl mb-2">📞</div>
-                        <p className="text-muted-foreground">Call Ended</p>
-                      </>
-                    )}
-                    {callStatus === 'active' && callType === 'audio' && (
-                      <>
-                        <div className="text-6xl mb-2">🎧</div>
-                        <p className="text-muted-foreground">Audio Call</p>
-                        <p className="text-sm text-muted-foreground">{receiverName || receiverEmail}</p>
-                      </>
-                    )}
+                    <Phone className="h-16 w-16 mx-auto mb-2 text-muted-foreground animate-pulse" />
+                    <p className="text-sm text-muted-foreground">
+                      {callStatus === 'connecting' ? 'Connecting...' : 'Waiting for connection'}
+                    </p>
                   </div>
                 </div>
               )}
@@ -283,101 +417,83 @@ export const VideoCallInterface: React.FC<VideoCallInterfaceProps> = ({
         </Card>
       </div>
 
-      {/* Call Controls */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* Call Type Selection (only when idle) */}
-            {callStatus === 'idle' && (
-              <div className="flex gap-2">
+        <CardFooter className="flex justify-center gap-4 p-6">
+          {callStatus === 'idle' && (
+            <Button
+              onClick={startCall}
+              size="lg"
+              className="gap-2"
+            >
+              <Phone className="h-5 w-5" />
+              Start Call
+            </Button>
+          )}
+
+          {(callStatus === 'connecting' || callStatus === 'active') && (
+            <>
+              {callType === 'video' && (
                 <Button
-                  variant={callType === 'video' ? 'default' : 'outline'}
-                  onClick={() => switchCallType('video')}
-                  size="sm"
+                  onClick={toggleVideo}
+                  variant={isVideoOff ? 'destructive' : 'secondary'}
+                  size="lg"
+                  className="gap-2"
                 >
-                  📹 Video Call
-                </Button>
-                <Button
-                  variant={callType === 'audio' ? 'default' : 'outline'}
-                  onClick={() => switchCallType('audio')}
-                  size="sm"
-                >
-                  🎤 Audio Call
-                </Button>
-              </div>
-            )}
-
-            {/* Main Call Controls */}
-            <div className="flex gap-2">
-              {callStatus === 'idle' && (
-                <Button onClick={startCall} className="bg-green-600 hover:bg-green-700">
-                  📞 Start Call
+                  {isVideoOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
+                  {isVideoOff ? 'Turn On Video' : 'Turn Off Video'}
                 </Button>
               )}
 
-              {callStatus === 'connecting' && (
-                <Button variant="outline" onClick={() => endCall('failed')}>
-                  ❌ Cancel
-                </Button>
-              )}
-
-              {callStatus === 'active' && (
-                <>
-                  <Button
-                    variant={isMuted ? 'destructive' : 'outline'}
-                    onClick={toggleMute}
-                    size="sm"
-                  >
-                    {isMuted ? '🔇' : '🎤'}
-                  </Button>
-                  
-                  {callType === 'video' && (
-                    <Button
-                      variant={isVideoOff ? 'destructive' : 'outline'}
-                      onClick={toggleVideo}
-                      size="sm"
-                    >
-                      {isVideoOff ? '📷 Off' : '📷 On'}
-                    </Button>
-                  )}
-                  
-                  <Button
-                    variant="destructive"
-                    onClick={() => endCall('completed')}
-                  >
-                    📞 End Call
-                  </Button>
-                </>
-              )}
-
-              {callStatus === 'ended' && (
-                <Button onClick={() => setCallStatus('idle')}>
-                  🔄 New Call
-                </Button>
-              )}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                💬 Message
+              <Button
+                onClick={toggleMute}
+                variant={isMuted ? 'destructive' : 'secondary'}
+                size="lg"
+                className="gap-2"
+              >
+                {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                {isMuted ? 'Unmute' : 'Mute'}
               </Button>
-              <Button variant="outline" size="sm">
-                🎁 Send Gift
+
+              <Button
+                onClick={() => endCall('completed')}
+                variant="destructive"
+                size="lg"
+                className="gap-2"
+              >
+                <PhoneOff className="h-5 w-5" />
+                End Call
+              </Button>
+            </>
+          )}
+
+          {callStatus === 'ended' && (
+            <div className="text-center">
+              <p className="text-muted-foreground mb-4">
+                Call ended - Duration: {formatDuration(callDuration)}
+              </p>
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
+              >
+                Start New Call
               </Button>
             </div>
-          </div>
-        </CardContent>
+          )}
+        </CardFooter>
       </Card>
 
-      {/* Call Quality Indicators */}
-      {callStatus === 'active' && (
+      {callStatus === 'idle' && (
         <Card className="mt-4">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between text-sm">
-              <span>Connection Quality:</span>
-              <Badge variant="default">Excellent</Badge>
-            </div>
+          <CardHeader>
+            <CardTitle className="text-sm">Before you start</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>• Make sure your browser has permission to access camera and microphone</li>
+              <li>• Use a stable internet connection for best quality</li>
+              <li>• Headphones are recommended to prevent echo</li>
+              <li>• The other person needs to be on this page to receive your call</li>
+            </ul>
           </CardContent>
         </Card>
       )}
