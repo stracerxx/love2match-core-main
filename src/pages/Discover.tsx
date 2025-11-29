@@ -2,32 +2,51 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, X, MapPin, Loader2, Settings } from 'lucide-react';
+import { Heart, X, MapPin, Loader2, Settings, Map, Grid } from 'lucide-react';
 import { getDiscoverProfiles } from '@/lib/profiles';
 import { upsertLike } from '@/lib/likes';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/supabase';
+import { calculateDistance } from '@/hooks/useGeolocation';
+import { supabase } from '@/integrations/supabase/client';
+import MapView from '@/components/discover/MapView';
 
 const Discover = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
 
-  useEffect(() => {
-    if (user) {
-      loadProfiles();
+  const loadUserLocation = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('demographics')
+      .eq('id', user.id)
+      .single();
+
+    if (!error && data?.demographics) {
+      const demographics = data.demographics as any;
+      if (demographics.location_lat && demographics.location_lng) {
+        setUserLocation({
+          lat: Number(demographics.location_lat),
+          lng: Number(demographics.location_lng)
+        });
+      }
     }
-  }, [user]);
+  };
 
   const loadProfiles = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     const { profiles: data, error } = await getDiscoverProfiles(user.id);
-    
+
     if (error) {
       toast({
         title: 'Error loading profiles',
@@ -37,9 +56,16 @@ const Discover = () => {
     } else {
       setProfiles(data);
     }
-    
+
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (user) {
+      loadUserLocation();
+      loadProfiles();
+    }
+  }, [user]);
 
   const handleLike = async () => {
     if (!user) return;
@@ -125,83 +151,124 @@ const Discover = () => {
             <h1 className="text-2xl md:text-3xl font-bold text-primary">Discover</h1>
             <p className="text-sm text-muted-foreground mt-1">{profiles.length} of {profiles.length} profiles</p>
           </div>
-          <Button variant="outline" size="icon">
-            <Settings className="h-5 w-5" />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === 'cards' ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => setViewMode('cards')}
+            >
+              <Grid className="h-5 w-5" />
+            </Button>
+            <Button
+              variant={viewMode === 'map' ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => setViewMode('map')}
+            >
+              <Map className="h-5 w-5" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <Settings className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 items-center justify-center p-4 md:p-8">
-        <div className="w-full max-w-md">
-          <Card className="shadow-card-hover overflow-hidden animate-scale-in border-0">
-            <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20">
-              {currentProfile.photos?.[0] ? (
-                <img
-                  src={currentProfile.photos[0]}
-                  alt={currentProfile.display_name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center bg-gradient-hero">
-                  <Heart className="h-24 w-24 text-white/50" />
-                </div>
-              )}
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 text-white">
-                <h2 className="mb-2 text-3xl font-bold">
-                  {currentProfile.display_name}
-                </h2>
-                {currentProfile.demographics?.location && (
-                  <div className="flex items-center gap-1 text-sm">
-                    <MapPin className="h-4 w-4" />
-                    <span>{currentProfile.demographics.location}</span>
+      {viewMode === 'map' ? (
+        <div className="flex-1 p-4 md:p-8">
+          <div className="h-[calc(100vh-200px)] w-full">
+            <MapView
+              profiles={profiles}
+              userLocation={userLocation}
+              onLike={handleLike}
+              onPass={handlePass}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-1 items-center justify-center p-4 md:p-8">
+          <div className="w-full max-w-md">
+            <Card className="shadow-card-hover overflow-hidden animate-scale-in border-0">
+              <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20">
+                {currentProfile.photos?.[0] ? (
+                  <img
+                    src={currentProfile.photos[0]}
+                    alt={currentProfile.display_name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center bg-gradient-hero">
+                    <Heart className="h-24 w-24 text-white/50" />
                   </div>
                 )}
-              </div>
-            </div>
-            
-            <CardContent className="p-6 bg-card">
-              {currentProfile.bio && (
-                <p className="mb-4 text-foreground text-sm">{currentProfile.bio}</p>
-              )}
-              
-              {currentProfile.tags && currentProfile.tags.length > 0 && (
-                <div className="mb-6 flex flex-wrap gap-2">
-                  {currentProfile.tags.map((tag, i) => (
-                    <Badge key={i} variant="secondary" className="bg-secondary/60">
-                      {tag}
-                    </Badge>
-                  ))}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 text-white">
+                  <h2 className="mb-2 text-3xl font-bold">
+                    {currentProfile.display_name}
+                  </h2>
+                  {(currentProfile.demographics?.location || (userLocation && (currentProfile.demographics as any)?.location_lat && (currentProfile.demographics as any)?.location_lng)) && (
+                    <div className="flex items-center gap-1 text-sm">
+                      <MapPin className="h-4 w-4" />
+                      <span>
+                        {String(currentProfile.demographics?.location || '')}
+                        {userLocation && (currentProfile.demographics as any)?.location_lat && (currentProfile.demographics as any)?.location_lng && (
+                          <span className="ml-1 text-white/80">
+                            • {calculateDistance(
+                              userLocation.lat,
+                              userLocation.lng,
+                              Number((currentProfile.demographics as any).location_lat),
+                              Number((currentProfile.demographics as any).location_lng)
+                            )} miles away
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
-
-              <div className="flex gap-3">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="flex-1 border border-muted-foreground/30 hover:bg-muted/50"
-                  onClick={handlePass}
-                >
-                  <X className="mr-2 h-5 w-5" />
-                  Pass
-                </Button>
-                <Button
-                  size="lg"
-                  className="flex-1 gradient-primary hover:shadow-lg text-white font-semibold"
-                  onClick={handleLike}
-                >
-                  <Heart className="mr-2 h-5 w-5" fill="currentColor" />
-                  Like
-                </Button>
               </div>
-            </CardContent>
-          </Card>
 
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            {currentIndex + 1} of {profiles.length} profiles
-          </p>
+              <CardContent className="p-6 bg-card">
+                {currentProfile.bio && (
+                  <p className="mb-4 text-foreground text-sm">{currentProfile.bio}</p>
+                )}
+
+                {currentProfile.tags && currentProfile.tags.length > 0 && (
+                  <div className="mb-6 flex flex-wrap gap-2">
+                    {currentProfile.tags.map((tag, i) => (
+                      <Badge key={i} variant="secondary" className="bg-secondary/60">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="flex-1 border border-muted-foreground/30 hover:bg-muted/50"
+                    onClick={handlePass}
+                  >
+                    <X className="mr-2 h-5 w-5" />
+                    Pass
+                  </Button>
+                  <Button
+                    size="lg"
+                    className="flex-1 gradient-primary hover:shadow-lg text-white font-semibold"
+                    onClick={handleLike}
+                  >
+                    <Heart className="mr-2 h-5 w-5" fill="currentColor" />
+                    Like
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <p className="mt-4 text-center text-xs text-muted-foreground">
+              {currentIndex + 1} of {profiles.length} profiles
+            </p>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

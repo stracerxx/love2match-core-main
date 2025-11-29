@@ -25,6 +25,7 @@ import EventDetail from "./pages/EventDetail";
 import VideoCall from "./pages/VideoCall";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
+import AdminTest from "./pages/AdminTest";
 
 const queryClient = new QueryClient();
 
@@ -170,6 +171,7 @@ const App = () => (
                 </AdminRoute>
               }
             />
+            <Route path="/admin-test" element={<AdminTest />} />
             <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

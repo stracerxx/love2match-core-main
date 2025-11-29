@@ -4,8 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import adminApi from '@/api/admin';
+import FaucetPanel from '@/components/admin/FaucetPanel';
+import MembershipPanel from '@/components/admin/MembershipPanel';
+import { getMembershipBadge } from '@/lib/membership';
 import { format } from 'date-fns';
-import { Loader2, Check, X, Users, Coins, TrendingUp, BarChart3, Shield, UserCog } from 'lucide-react';
+import { Loader2, Check, X, Users, Coins, TrendingUp, BarChart3, Shield, UserCog, Zap, Crown, Star } from 'lucide-react';
 
 interface ExchangeRequest {
   id: string;
@@ -41,7 +44,7 @@ const Admin = () => {
   });
 
   // Pending exchanges
-  const { data: pendingExchanges, isLoading: exchangesLoading } = useQuery<ExchangeRequest[]>({
+  const { data: pendingExchanges, isLoading: exchangesLoading } = useQuery({
     queryKey: ['admin', 'pendingExchanges'],
     queryFn: adminApi.getPendingExchanges,
   });
@@ -165,9 +168,17 @@ const Admin = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* User Management */}
-          <Card className="shadow-card bg-card border-border">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Token Faucet & Membership */}
+          <div className="lg:col-span-1 space-y-6">
+            <FaucetPanel />
+            <MembershipPanel />
+          </div>
+
+          {/* User Management & Pending Exchanges */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* User Management */}
+            <Card className="shadow-card bg-card border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserCog className="h-5 w-5 text-primary" />
@@ -186,16 +197,29 @@ const Admin = () => {
                   {allUsers.slice(0, 10).map((user) => (
                     <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium text-foreground">{user.email}</span>
                           <Badge
                             className={user.role === 'admin' ? 'badge-cyan' : 'badge-gold'}
                           >
                             {user.role}
                           </Badge>
+                          {user.membership_tier && user.membership_tier !== 'standard' && (
+                            <Badge className={getMembershipBadge(user.membership_tier as any).color}>
+                              {user.membership_tier === 'plus' ? (
+                                <Star className="h-3 w-3 mr-1" />
+                              ) : (
+                                <Crown className="h-3 w-3 mr-1" />
+                              )}
+                              {user.membership_tier.charAt(0).toUpperCase() + user.membership_tier.slice(1)}
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground">
                           Joined {format(new Date(user.created_date), 'MMM d, yyyy')}
+                          {user.membership_expires_at && (
+                            <> • Expires {format(new Date(user.membership_expires_at), 'MMM d, yyyy')}</>
+                          )}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -203,7 +227,7 @@ const Admin = () => {
                           size="sm"
                           variant="outline"
                           className="border-cyan text-cyan hover:bg-cyan/10 hover:text-cyan"
-                          onClick={() => updateRoleMutation.mutate({ userId: user.id, newRole: 'admin' })}
+                          onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'admin' })}
                           disabled={isProcessing || user.role === 'admin'}
                         >
                           Make Admin
@@ -212,7 +236,7 @@ const Admin = () => {
                           size="sm"
                           variant="outline"
                           className="border-gold text-gold hover:bg-gold/10 hover:text-gold"
-                          onClick={() => updateRoleMutation.mutate({ userId: user.id, newRole: 'member' })}
+                          onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'member' })}
                           disabled={isProcessing || user.role === 'member'}
                         >
                           Make Member
@@ -223,10 +247,10 @@ const Admin = () => {
                 </div>
               )}
             </CardContent>
-          </Card>
+            </Card>
 
-          {/* Pending Exchanges */}
-          <Card className="shadow-card bg-card border-border">
+            {/* Pending Exchanges */}
+            <Card className="shadow-card bg-card border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Coins className="h-5 w-5 text-primary" />
@@ -262,7 +286,7 @@ const Admin = () => {
                             size="sm"
                             variant="outline"
                             className="border-green-500 text-green-500 hover:bg-green-500/10 hover:text-green-500"
-                            onClick={() => approveMutation.mutate(req.id)}
+                            onClick={() => approveMutation.mutate(req.id.toString())}
                             disabled={isProcessing}
                           >
                             <Check className="h-4 w-4 mr-2" /> Approve
@@ -271,7 +295,7 @@ const Admin = () => {
                             size="sm"
                             variant="outline"
                             className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => rejectMutation.mutate(req.id)}
+                            onClick={() => rejectMutation.mutate(req.id.toString())}
                             disabled={isProcessing}
                           >
                             <X className="h-4 w-4 mr-2" /> Reject
@@ -283,7 +307,8 @@ const Admin = () => {
                 </div>
               )}
             </CardContent>
-          </Card>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

@@ -19,12 +19,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import type { UserProfile } from '@/lib/supabase';
+import { useGeolocation } from '@/hooks/useGeolocation';
 
 const Profile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  
+  const { location: geoLocation, loading: geoLoading } = useGeolocation();
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -34,6 +36,8 @@ const Profile = () => {
     full_name: '',
     bio: '',
     location: '',
+    location_lat: null as number | null,
+    location_lng: null as number | null,
     interests: '',
     relationship_goals: '',
     height: '',
@@ -90,6 +94,8 @@ const Profile = () => {
         full_name: fullName,
         bio: '',
         location: '',
+        location_lat: null,
+        location_lng: null,
         interests: '',
         relationship_goals: '',
         height: '',
@@ -156,6 +162,8 @@ const Profile = () => {
         full_name: data.full_name || '',
         bio: data.bio || '',
         location: data.demographics?.location || '',
+        location_lat: data.demographics?.location_lat || null,
+        location_lng: data.demographics?.location_lng || null,
         interests: data.demographics?.interests?.join(', ') || '',
         relationship_goals: data.demographics?.relationship_goals || '',
         height: data.demographics?.height || '',
@@ -213,13 +221,53 @@ const Profile = () => {
         description: 'Your changes have been saved.',
       });
     }
-    
+
     setSaving(false);
   };
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
+  };
+
+  const handleUpdateLocation = async () => {
+    if (!geoLocation || !user) return;
+
+    const locationString = geoLocation.city
+      ? `${geoLocation.city}, ${geoLocation.country}`
+      : `${geoLocation.latitude.toFixed(2)}, ${geoLocation.longitude.toFixed(2)}`;
+
+    setFormData({
+      ...formData,
+      location: locationString,
+      location_lat: geoLocation.latitude,
+      location_lng: geoLocation.longitude,
+    });
+
+    const { error } = await supabase
+      .from('users')
+      .update({
+        demographics: {
+          ...profile?.demographics,
+          location: locationString,
+          location_lat: geoLocation.latitude,
+          location_lng: geoLocation.longitude,
+        }
+      })
+      .eq('id', user.id);
+
+    if (error) {
+      toast({
+        title: 'Error updating location',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Location updated',
+        description: `Your location has been set to ${locationString}`,
+      });
+    }
   };
 
   if (loading) {
@@ -312,7 +360,7 @@ const Profile = () => {
                 )}
               </div>
             </CardHeader>
-            
+
             <CardContent className="space-y-6 pt-6">
               <div className="space-y-4">
                 <div className="space-y-2">

@@ -21,7 +21,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user && !authLoading) {
-      navigate('/', { replace: true });
+      navigate('/discover', { replace: true });
     }
   }, [user, authLoading, navigate]);
 
@@ -43,6 +43,7 @@ const Auth = () => {
         title: 'Welcome back!',
         description: 'You have successfully signed in.',
       });
+      setLoading(false);
     }
   };
 
@@ -68,6 +69,7 @@ const Auth = () => {
         title: 'Account created!',
         description: 'Welcome to Love2Match. Complete your profile to start matching.',
       });
+      setLoading(false);
     }
   };
 
