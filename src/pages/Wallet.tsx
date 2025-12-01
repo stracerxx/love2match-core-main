@@ -11,7 +11,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import walletApi from '@/api/wallet';
 import blockchainApi, { LOVE_TOKEN_MINT } from '@/api/blockchain';
 import { format } from 'date-fns';
-import { AlertCircle, Copy, CheckCircle, ArrowRightLeft, Loader2 } from 'lucide-react';
+import { AlertCircle, Copy, CheckCircle, ArrowRightLeft, Loader2, Heart, Coins, Wallet as WalletIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConversionHistory } from '@/components/wallet/ConversionHistory';
 
@@ -23,7 +23,7 @@ const Wallet = () => {
   const [onChainData, setOnChainData] = useState<{ solBalance: number; loveBalance: number } | null>(null);
   const { toast } = useToast();
 
-  const { data: balances } = useQuery<{ love_balance: number; love2_balance: number } | null>({
+  const { data: balances } = useQuery<{ love_balance: number; love2_balance: number; sol_balance?: number } | null>({
     queryKey: ['wallet', user?.id],
     queryFn: async () => {
       if (!user) return { love_balance: 0, love2_balance: 0 };
@@ -105,24 +105,72 @@ const Wallet = () => {
       <div className="max-w-3xl mx-auto space-y-6">
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle>Wallet</CardTitle>
+            <CardTitle>Three‑Wallet System</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold">LOVE</h3>
-                <p className="text-2xl">{balances ? balances.love_balance : '—'}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* LOVE Wallet */}
+             <div className="rounded-lg border border-pink-300 bg-gradient-to-br from-pink-50 to-pink-100 p-4">
+               <div className="flex items-center justify-between mb-2">
+                 <h3 className="text-lg font-bold text-pink-800 flex items-center gap-2">
+                   <Heart className="h-10 w-10 text-primary fill-primary/30" />
+                   <span>LOVE</span>
+                 </h3>
+                 <div className="h-8 w-8 rounded-full bg-pink-200 flex items-center justify-center border border-pink-300">
+                   <span className="text-xs text-pink-700">icon</span>
+                 </div>
+               </div>
+                <p className="text-3xl font-bold text-pink-900">{balances ? balances.love_balance.toFixed(2) : '0.00'}</p>
+                <p className="text-sm text-pink-700 mt-1">In‑app tokens for likes, gifts, subscriptions</p>
+                <div className="mt-4 flex gap-2">
+                  <Button size="sm" onClick={() => earnMutation.mutate(10)} disabled={!user || earnMutation.status === 'pending'}>Earn</Button>
+                  <Button size="sm" variant="outline" onClick={() => spendMutation.mutate(5)} disabled={!user || spendMutation.status === 'pending'}>Spend</Button>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold">LOVE2</h3>
-                <p className="text-2xl">{balances ? balances.love2_balance : '—'}</p>
+
+              {/* LOVE2 Wallet */}
+              <div className="rounded-lg border border-purple-300 bg-gradient-to-br from-purple-50 to-purple-100 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-bold text-purple-800 flex items-center gap-2">
+                    <Coins className="h-5 w-5" />
+                    LOVE2
+                  </h3>
+                  <div className="h-8 w-8 rounded-full bg-purple-200 flex items-center justify-center border-2 border-purple-300">
+                    <Coins className="h-4 w-4 text-purple-700" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-purple-900">{balances ? balances.love2_balance.toFixed(2) : '0.00'}</p>
+                <p className="text-sm text-purple-700 mt-1">Solana‑based token for on‑chain transfers</p>
+                <div className="mt-4 flex gap-2">
+                  <ExchangeDialog balances={balances} />
+                  <Button size="sm" variant="outline" disabled>Bridge</Button>
+                </div>
+              </div>
+
+              {/* Solana Wallet */}
+              <div className="rounded-lg border border-cyan-300 bg-gradient-to-br from-cyan-50 to-cyan-100 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-bold text-cyan-800 flex items-center gap-2">
+                    <WalletIcon className="h-5 w-5" />
+                    Solana
+                  </h3>
+                  <div className="h-8 w-8 rounded-full bg-cyan-200 flex items-center justify-center border-2 border-cyan-300">
+                    <WalletIcon className="h-4 w-4 text-cyan-700" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-cyan-900">
+                  {onChainData ? onChainData.solBalance.toFixed(4) : '0.0000'} SOL
+                </p>
+                <p className="text-sm text-cyan-700 mt-1">Gas fees & on‑chain transactions</p>
+                <div className="mt-4 flex gap-2">
+                  <Button size="sm" variant="outline" disabled={!connected}>Deposit</Button>
+                  <Button size="sm" variant="outline" disabled={!connected}>Withdraw</Button>
+                </div>
               </div>
             </div>
 
-            <div className="mt-6 flex gap-2">
-              <Button onClick={() => earnMutation.mutate(10)} disabled={!user || earnMutation.status === 'pending'}>Earn 10 LOVE</Button>
-              <Button variant="outline" onClick={() => spendMutation.mutate(5)} disabled={!user || spendMutation.status === 'pending'}>Spend 5 LOVE</Button>
-              <ExchangeDialog balances={balances} />
+            <div className="mt-6 text-xs text-muted-foreground">
+              <p><strong>LOVE</strong> – In‑app currency for daily interactions. <strong>LOVE2</strong> – Bridgeable to Solana blockchain. <strong>Solana</strong> – Pays for gas and external transfers.</p>
             </div>
           </CardContent>
         </Card>
@@ -244,9 +292,8 @@ const ExchangeDialog = ({ balances }: { balances: { love_balance: number; love2_
   const exchangeMutation = useMutation<void, Error, { from: 'love'; to: 'love2'; amount: number }>({
     mutationFn: async (variables) => {
       if (!user) throw new Error('User not authenticated');
-      // This now creates a request that an admin must approve.
-      // The backend will handle creating a pending transaction.
-      return walletApi.requestExchange(user.id, variables.from, variables.to, variables.amount);
+      // Use existing exchangeTokens function
+      return walletApi.exchangeTokens(user.id, variables.from, variables.to, variables.amount);
     },
     onSuccess: (_, variables) => {
       toast({

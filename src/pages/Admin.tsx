@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import adminApi from '@/api/admin';
 import FaucetPanel from '@/components/admin/FaucetPanel';
 import MembershipPanel from '@/components/admin/MembershipPanel';
+import TreasuryPanel from '@/components/admin/TreasuryPanel';
 import { getMembershipBadge } from '@/lib/membership';
 import { format } from 'date-fns';
 import { Loader2, Check, X, Users, Coins, TrendingUp, BarChart3, Shield, UserCog, Zap, Crown, Star } from 'lucide-react';
@@ -85,6 +86,18 @@ const Admin = () => {
   });
 
   const isProcessing = approveMutation.isPending || rejectMutation.isPending || updateRoleMutation.isPending;
+
+  // Helper to get membership badge color
+  const getMembershipColor = (tier: string) => {
+    switch (tier) {
+      case 'plus':
+        return 'bg-blue-500/10 text-blue-500 border-blue-500';
+      case 'premium':
+        return 'bg-purple-500/10 text-purple-500 border-purple-500';
+      default:
+        return 'bg-gray-500/10 text-gray-500 border-gray-500';
+    }
+  };
 
   return (
     <div className="min-h-screen p-6 md:ml-20 bg-background">
@@ -173,6 +186,7 @@ const Admin = () => {
           <div className="lg:col-span-1 space-y-6">
             <FaucetPanel />
             <MembershipPanel />
+            <TreasuryPanel />
           </div>
 
           {/* User Management & Pending Exchanges */}
@@ -205,7 +219,7 @@ const Admin = () => {
                             {user.role}
                           </Badge>
                           {user.membership_tier && user.membership_tier !== 'standard' && (
-                            <Badge className={getMembershipBadge(user.membership_tier as any).color}>
+                            <Badge className={getMembershipColor(user.membership_tier)}>
                               {user.membership_tier === 'plus' ? (
                                 <Star className="h-3 w-3 mr-1" />
                               ) : (

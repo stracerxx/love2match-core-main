@@ -20,10 +20,10 @@ const navItems = [
   { id: 'matches', to: '/matches', icon: Image, label: 'Matches' },
   { id: 'events', to: '/events', icon: Calendar, label: 'Events' },
   { id: 'games', to: '/games', icon: GamepadIcon, label: 'Games' },
+  { id: 'wallet', to: '/wallet', icon: Wallet, label: 'Wallet' },
   { id: 'gifts', to: '/gifts', icon: Gift, label: 'Gifts' },
   { id: 'content', to: '/content', icon: Store, label: 'Content' },
   { id: 'notifications', to: '/notifications', icon: Bell, label: 'Notifications' },
-  { id: 'wallet', to: '/wallet', icon: Wallet, label: 'Wallet' },
   { id: 'profile', to: '/profile', icon: User, label: 'Profile' },
 ];
 
@@ -104,6 +104,12 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                   <span>Profile</span>
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/wallet" className="cursor-pointer">
+                  <Wallet className="mr-2 h-4 w-4" />
+                  <span>Wallet</span>
+                </Link>
+              </DropdownMenuItem>
               {!isAdmin && (
                 <DropdownMenuItem asChild>
                   <Link to="/admin-login" className="cursor-pointer">
@@ -162,6 +168,12 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 <Link to="/profile" className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile & Settings</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/wallet" className="cursor-pointer">
+                  <Wallet className="mr-2 h-4 w-4" />
+                  <span>Wallet</span>
                 </Link>
               </DropdownMenuItem>
               {!isAdmin && (
