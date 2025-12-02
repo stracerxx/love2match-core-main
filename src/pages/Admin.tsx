@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import adminApi from '@/api/admin';
 import FaucetPanel from '@/components/admin/FaucetPanel';
 import MembershipPanel from '@/components/admin/MembershipPanel';
-import TreasuryPanel from '@/components/admin/TreasuryPanel';
+// import TreasuryPanel from '@/components/admin/TreasuryPanel';
 import { getMembershipBadge } from '@/lib/membership';
 import { format } from 'date-fns';
 import { Loader2, Check, X, Users, Coins, TrendingUp, BarChart3, Shield, UserCog, Zap, Crown, Star } from 'lucide-react';
@@ -186,7 +186,7 @@ const Admin = () => {
           <div className="lg:col-span-1 space-y-6">
             <FaucetPanel />
             <MembershipPanel />
-            <TreasuryPanel />
+            {/* <TreasuryPanel /> */}
           </div>
 
           {/* User Management & Pending Exchanges */}
