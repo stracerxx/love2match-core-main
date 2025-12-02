@@ -4,10 +4,6 @@ import { useAuth } from '@/hooks/useAuth';
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
 
-  // --- Roo: Debugging ---
-  console.log('ProtectedRoute auth state:', { loading, user });
-  // --- End Roo: Debugging ---
-  
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">

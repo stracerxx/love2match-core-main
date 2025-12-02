@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Heart, X, MapPin, Loader2, Settings, Map, Grid } from 'lucide-react';
-import { getDiscoverProfiles } from '@/lib/profiles';
+import { getDiscoverProfiles, getUserProfile } from '@/lib/profiles';
 import { upsertLike } from '@/lib/likes';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -12,9 +12,10 @@ import { calculateDistance } from '@/hooks/useGeolocation';
 import MapView from '@/components/discover/MapView';
 
 const Discover = () => {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -25,11 +26,6 @@ const Discover = () => {
 
     setLoading(true);
     const { profiles: data, error } = await getDiscoverProfiles(user.id);
-
-    // --- Roo: Debugging ---
-    console.log('Fetched profiles data:', data);
-    console.log('Fetched profiles error:', error);
-    // --- End Roo: Debugging ---
 
     if (error) {
       toast({
@@ -45,21 +41,24 @@ const Discover = () => {
   };
 
   useEffect(() => {
-    // --- Roo: Debugging ---
-    console.log('Auth user object:', user);
-    console.log('Auth profile object:', profile);
-    // --- End Roo: Debugging ---
-    if (user && profile) {
-      loadProfiles();
-      const demo = profile.demographics as any;
-      if (demo?.location_lat && demo?.location_lng) {
-        setUserLocation({
-          lat: Number(demo.location_lat),
-          lng: Number(demo.location_lng),
-        });
+    const fetchUserProfile = async () => {
+      if (user) {
+        const { profile } = await getUserProfile(user.id);
+        setUserProfile(profile);
+        loadProfiles();
+        if (profile) {
+          const demo = profile.demographics as any;
+          if (demo?.location_lat && demo?.location_lng) {
+            setUserLocation({
+              lat: Number(demo.location_lat),
+              lng: Number(demo.location_lng),
+            });
+          }
+        }
       }
-    }
-  }, [user, profile, authLoading]);
+    };
+    fetchUserProfile();
+  }, [user, authLoading]);
 
   const handleLike = async () => {
     if (!user) return;
