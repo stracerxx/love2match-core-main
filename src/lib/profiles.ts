@@ -39,10 +39,6 @@ export const getDiscoverProfiles = async (currentUserId: string, limit = 20) => 
     .order('last_active', { ascending: false })
     .limit(limit);
   
-  // --- Roo: Final Debugging ---
-  console.log('getDiscoverProfiles query result:', { data, error });
-  // --- End Roo: Final Debugging ---
-
   if (error) {
     return { profiles: [], error: { message: error.message } };
   }
