@@ -1,137 +1,58 @@
 import { supabase } from '@/integrations/supabase/client';
+import { UserProfile } from './supabase';
 
-export type MembershipTier = 'standard' | 'plus' | 'premium';
-
-export interface MembershipStatus {
-  tier: MembershipTier;
-  isActive: boolean;
-  expiresAt?: string;
-  daysRemaining?: number;
-}
-
-/**
- * Check if a user has active Plus or Premium membership
- */
-export const checkMembershipStatus = async (userId: string): Promise<MembershipStatus> => {
-  try {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('membership_tier, membership_expires_at')
-      .eq('auth_user_id', userId)
-      .single();
-
-    if (error || !profile) {
-      return {
-        tier: 'standard',
-        isActive: false
-      };
-    }
-
-    const tier = (profile.membership_tier as MembershipTier) || 'standard';
-    const expiresAt = profile.membership_expires_at;
-    
-    if (tier === 'standard') {
-      return {
-        tier: 'standard',
-        isActive: false
-      };
-    }
-
-    const now = new Date();
-    const expirationDate = expiresAt ? new Date(expiresAt) : null;
-    const isActive = !expirationDate || expirationDate > now;
-    
-    let daysRemaining: number | undefined;
-    if (expirationDate && isActive) {
-      daysRemaining = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    }
-
-    return {
-      tier,
-      isActive,
-      expiresAt: expiresAt || undefined,
-      daysRemaining
-    };
-  } catch (error) {
-    console.error('Error checking membership status:', error);
-    return {
-      tier: 'standard',
-      isActive: false
-    };
-  }
+export const MEMBERSHIP_CONFIG = {
+  STANDARD: { daily_like_limit: 10 },
+  PLUS: { daily_like_limit: 50 },
+  PREMIUM: { daily_like_limit: null }, // Unlimited
 };
 
-/**
- * Check if content should be visible based on user's membership
- */
-export const canViewContent = (contentTier: MembershipTier, userTier: MembershipTier): boolean => {
-  const tierLevels = {
-    'standard': 0,
-    'plus': 1,
-    'premium': 2
-  };
+export type MembershipTier = keyof typeof MEMBERSHIP_CONFIG;
 
-  return tierLevels[userTier] >= tierLevels[contentTier];
+export const getMembershipTier = (profile: UserProfile): MembershipTier => {
+  return (profile.membership_tier as MembershipTier) || 'STANDARD';
 };
-
-/**
- * Get membership badge color and label
- */
-export const getMembershipBadge = (tier?: MembershipTier) => {
+export const getMembershipBadge = (tier: MembershipTier): string => {
   switch (tier) {
-    case 'plus':
-      return { label: 'Plus', color: 'bg-blue-500 text-white' };
-    case 'premium':
-      return { label: 'Premium', color: 'bg-purple-500 text-white' };
+    case 'PREMIUM':
+      return '💎 Premium';
+    case 'PLUS':
+      return '✨ Plus';
     default:
-      return { label: 'Standard', color: 'bg-gray-500 text-white' };
+      return 'Standard';
   }
 };
 
-/**
- * Check if user can access Plus-only features
- */
-export const hasPlusAccess = async (userId: string): Promise<boolean> => {
-  const status = await checkMembershipStatus(userId);
-  return status.tier === 'plus' || status.tier === 'premium';
-};
+export const canUserLike = async (userId: string): Promise<{ canLike: boolean; remaining: number | null }> => {
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('membership_tier, daily_likes_used, last_like_date')
+    .eq('id', userId)
+    .single();
 
-/**
- * Check if user can access Premium-only features
- */
-export const hasPremiumAccess = async (userId: string): Promise<boolean> => {
-  const status = await checkMembershipStatus(userId);
-  return status.tier === 'premium';
-};
+  if (error || !user) {
+    return { canLike: false, remaining: 0 };
+  }
 
-/**
- * Get membership benefits for each tier
- */
-export const getMembershipBenefits = (tier: MembershipTier) => {
-  const benefits = {
-    standard: [
-      'Basic profile features',
-      'Limited daily likes',
-      'Standard discovery filters',
-      'Basic messaging'
-    ],
-    plus: [
-      'All Standard benefits',
-      'Unlimited daily likes',
-      'Advanced discovery filters',
-      'Priority in search results',
-      'Plus-only content access',
-      'Enhanced profile customization'
-    ],
-    premium: [
-      'All Plus benefits',
-      'Premium badge on profile',
-      'Exclusive premium content',
-      'Priority customer support',
-      'Advanced analytics',
-      'Creator verification eligibility'
-    ]
-  };
+  const tier = getMembershipTier(user as UserProfile);
+  const limit = MEMBERSHIP_CONFIG[tier].daily_like_limit;
 
-  return benefits[tier];
+  if (limit === null) {
+    return { canLike: true, remaining: null };
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const lastLikeDate = user.last_like_date;
+  const likesUsed = user.daily_likes_used || 0;
+
+  if (lastLikeDate !== today) {
+    // Reset daily likes if it's a new day
+    return { canLike: true, remaining: limit };
+  }
+
+  if (likesUsed >= limit) {
+    return { canLike: false, remaining: 0 };
+  }
+
+  return { canLike: true, remaining: limit - likesUsed };
 };

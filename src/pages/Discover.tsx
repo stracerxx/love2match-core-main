@@ -7,39 +7,18 @@ import { getDiscoverProfiles } from '@/lib/profiles';
 import { upsertLike } from '@/lib/likes';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import type { UserProfile } from '@/lib/supabase';
+import { UserProfile } from '@/lib/supabase';
 import { calculateDistance } from '@/hooks/useGeolocation';
-import { supabase } from '@/integrations/supabase/client';
 import MapView from '@/components/discover/MapView';
 
 const Discover = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
-
-  const loadUserLocation = async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('demographics')
-      .eq('id', user.id)
-      .single();
-
-    if (!error && data?.demographics) {
-      const demographics = data.demographics as any;
-      if (demographics.location_lat && demographics.location_lng) {
-        setUserLocation({
-          lat: Number(demographics.location_lat),
-          lng: Number(demographics.location_lng)
-        });
-      }
-    }
-  };
 
   const loadProfiles = async () => {
     if (!user) return;
@@ -62,10 +41,16 @@ const Discover = () => {
 
   useEffect(() => {
     if (user) {
-      loadUserLocation();
       loadProfiles();
+      const demo = user.demographics as any;
+      if (demo?.location_lat && demo?.location_lng) {
+        setUserLocation({
+          lat: Number(demo.location_lat),
+          lng: Number(demo.location_lng),
+        });
+      }
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   const handleLike = async () => {
     if (!user) return;
@@ -205,21 +190,16 @@ const Discover = () => {
                   <h2 className="mb-2 text-3xl font-bold">
                     {currentProfile.display_name}
                   </h2>
-                  {(currentProfile.demographics?.location || (userLocation && (currentProfile.demographics as any)?.location_lat && (currentProfile.demographics as any)?.location_lng)) && (
+                  {(currentProfile.demographics as any)?.location_lat && (currentProfile.demographics as any)?.location_lng && userLocation && (
                     <div className="flex items-center gap-1 text-sm">
                       <MapPin className="h-4 w-4" />
                       <span>
-                        {String(currentProfile.demographics?.location || '')}
-                        {userLocation && (currentProfile.demographics as any)?.location_lat && (currentProfile.demographics as any)?.location_lng && (
-                          <span className="ml-1 text-white/80">
-                            • {calculateDistance(
-                              userLocation.lat,
-                              userLocation.lng,
-                              Number((currentProfile.demographics as any).location_lat),
-                              Number((currentProfile.demographics as any).location_lng)
-                            )} miles away
-                          </span>
-                        )}
+                        {calculateDistance(
+                          userLocation.lat,
+                          userLocation.lng,
+                          Number((currentProfile.demographics as any).location_lat),
+                          Number((currentProfile.demographics as any).location_lng)
+                        )} miles away
                       </span>
                     </div>
                   )}

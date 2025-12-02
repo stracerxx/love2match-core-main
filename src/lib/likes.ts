@@ -1,8 +1,16 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
+import { canUserLike } from "./membership";
 
 export type LikeStatus = "like" | "pass";
 
 export async function upsertLike(userId: string, targetUserId: string, status: LikeStatus) {
+  if (status === 'like') {
+    const { canLike, remaining } = await canUserLike(userId);
+    if (!canLike) {
+      return { data: null, error: { message: `You have no likes remaining. You have ${remaining} likes left today.` } };
+    }
+  }
+
   const { data, error } = await supabase
     .from("likes")
     .upsert(
@@ -11,6 +19,17 @@ export async function upsertLike(userId: string, targetUserId: string, status: L
     )
     .select()
     .single();
+
+  if (!error && status === 'like') {
+    // This is a bit of a hack, but it's the easiest way to do this without a transaction
+    // We should ideally use a transaction here to ensure atomicity
+    const { error: updateError } = await supabase.rpc('increment_likes', { user_id_param: userId });
+    if (updateError) {
+      console.error('Failed to increment likes', updateError);
+      // Not returning error here as the like was still successful
+    }
+  }
+
 
   return { data, error };
 }

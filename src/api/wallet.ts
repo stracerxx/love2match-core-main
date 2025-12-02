@@ -3,7 +3,7 @@ import type { Database } from '@/integrations/supabase/types';
 
 type TokenTransaction = Database['public']['Tables']['token_transactions']['Row'];
 
-type Balances = { love_balance: number; love2_balance: number };
+type Balances = { love_balance: number; love2_balance: number; sol_balance?: number };
 
 export const walletApi = {
   async getBalances(userId: string): Promise<Balances> {
@@ -14,7 +14,11 @@ export const walletApi = {
       .single();
 
     if (error) throw error;
-    return { love_balance: Number(data?.love_token_balance || 0), love2_balance: Number(data?.love2_token_balance || 0) };
+    return {
+      love_balance: Number(data?.love_token_balance || 0),
+      love2_balance: Number(data?.love2_token_balance || 0),
+      sol_balance: 0 // Placeholder - would need to fetch from blockchain
+    };
   },
 
   async listTransactions(userId: string, limit = 20): Promise<TokenTransaction[]> {
