@@ -12,7 +12,7 @@ import { calculateDistance } from '@/hooks/useGeolocation';
 import MapView from '@/components/discover/MapView';
 
 const Discover = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +25,11 @@ const Discover = () => {
 
     setLoading(true);
     const { profiles: data, error } = await getDiscoverProfiles(user.id);
+
+    // --- Roo: Debugging ---
+    console.log('Fetched profiles data:', data);
+    console.log('Fetched profiles error:', error);
+    // --- End Roo: Debugging ---
 
     if (error) {
       toast({
@@ -40,9 +45,13 @@ const Discover = () => {
   };
 
   useEffect(() => {
-    if (user) {
+    // --- Roo: Debugging ---
+    console.log('Auth user object:', user);
+    console.log('Auth profile object:', profile);
+    // --- End Roo: Debugging ---
+    if (user && profile) {
       loadProfiles();
-      const demo = user.demographics as any;
+      const demo = profile.demographics as any;
       if (demo?.location_lat && demo?.location_lng) {
         setUserLocation({
           lat: Number(demo.location_lat),
@@ -50,7 +59,7 @@ const Discover = () => {
         });
       }
     }
-  }, [user, authLoading]);
+  }, [user, profile, authLoading]);
 
   const handleLike = async () => {
     if (!user) return;
