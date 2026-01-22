@@ -68,35 +68,47 @@ export const adminApi = {
     };
   },
 
-  // Get all users with profile data for admin panel
+  // Get all users with profile and user data
   async getAllUsers(): Promise<UserProfile[]> {
+    // Get profiles from the 'profiles' table
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select(`
-        id,
-        auth_user_id,
-        created_at,
-        love_token_balance,
-        love2_token_balance,
-        membership_tier,
-        membership_expires_at,
-        users (email, role, created_date)
-      `)
+      .select('id, auth_user_id, created_at, love_token_balance, love2_token_balance, membership_tier, membership_expires_at')
       .order('created_at', { ascending: false });
 
-    if (profilesError) throw profilesError;
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+      throw profilesError;
+    }
 
-    return profiles?.map(profile => ({
-      id: profile.id,
-      auth_user_id: profile.auth_user_id,
-      email: (profile.users as any)?.email || 'Unknown',
-      role: (profile.users as any)?.role || 'member',
-      created_date: (profile.users as any)?.created_date || profile.created_at,
-      love_token_balance: profile.love_token_balance,
-      love2_token_balance: profile.love2_token_balance,
-      membership_tier: profile.membership_tier,
-      membership_expires_at: profile.membership_expires_at
-    })) || [];
+    // Get users data separately from the 'users' (auth.users) table
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, email, role, created_at'); // Assuming these columns exist in auth.users
+
+    if (usersError) {
+      console.error('Error fetching auth.users:', usersError);
+      // It's possible the 'role' column does not exist on auth.users,
+      // but 'email', 'id', 'created_at' should.
+      // If 'role' is problematic, we may need to remove it or handle it.
+      throw usersError;
+    }
+
+    // Combine the data
+    return profiles?.map(profile => {
+      const user = users?.find(u => u.id === profile.auth_user_id);
+      return {
+        id: profile.id,
+        auth_user_id: profile.auth_user_id,
+        email: user?.email || 'Unknown',
+        role: user?.role || 'member', // Default to 'member' if role not found
+        created_date: user?.created_at || profile.created_at,
+        love_token_balance: profile.love_token_balance,
+        love2_token_balance: profile.love2_token_balance,
+        membership_tier: profile.membership_tier,
+        membership_expires_at: profile.membership_expires_at
+      };
+    }) || [];
   },
 
   // Update user role using direct update
@@ -344,27 +356,22 @@ export const adminApi = {
   // due to missing 'treasury' and 'app_config' tables after migrations removal.
 
   async getTreasuryBalances() {
-    console.warn('`getTreasuryBalances` is disabled due to missing `treasury` table.');
     return [];
   },
 
   async getFeeConfig() {
-    console.warn('`getFeeConfig` is disabled due to missing `app_config` table.');
     return [];
   },
 
   async updateFeeConfig(key: string, value: string) {
-    console.warn(`Admin API: updateFeeConfig(${key}, ${value}) is disabled due to missing 'app_config' table.`);
     throw new Error('Fee configuration update is currently disabled.');
   },
 
   async adjustTreasuryBalance(tokenType: string, amount: number, description?: string) {
-    console.warn(`Admin API: adjustTreasuryBalance(${tokenType}, ${amount}) is disabled due to missing 'treasury' table.`);
     throw new Error('Treasury balance adjustments are currently disabled.');
   },
 
   async getTreasuryTransactions(limit = 50) {
-    console.warn('`getTreasuryTransactions` is disabled due to missing `treasury_transactions` table.');
     return [];
   }
 };

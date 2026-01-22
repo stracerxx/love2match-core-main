@@ -1,1 +1,5 @@
 project_id = "nxydfptbvvlymfyerqhf"
+
+[auth]
+disable_signup = false
+email_mode = "unrestricted"

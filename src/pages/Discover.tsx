@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { UserProfile } from '@/lib/supabase';
 import { calculateDistance } from '@/hooks/useGeolocation';
 import MapView from '@/components/discover/MapView';
+import { SendGiftModal } from '@/components/SendGiftModal';
 
 const Discover = () => {
   const { user, loading: authLoading } = useAuth();
@@ -20,6 +21,7 @@ const Discover = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
+  const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
 
   const loadProfiles = async () => {
     if (!user) return;
@@ -248,6 +250,15 @@ const Discover = () => {
                     Like
                   </Button>
                 </div>
+
+                <Button
+                  variant="ghost"
+                  className="w-full mt-4 text-accent hover:text-accent/80 hover:bg-accent/10 font-medium"
+                  onClick={() => setIsGiftModalOpen(true)}
+                >
+                  <Gift className="mr-2 h-4 w-4" />
+                  Send Gift
+                </Button>
               </CardContent>
             </Card>
 
@@ -256,6 +267,15 @@ const Discover = () => {
             </p>
           </div>
         </div>
+      )}
+
+      {currentProfile && (
+        <SendGiftModal
+          isOpen={isGiftModalOpen}
+          onClose={() => setIsGiftModalOpen(false)}
+          receiverEmail={currentProfile.email}
+          receiverName={currentProfile.display_name}
+        />
       )}
     </div>
   );

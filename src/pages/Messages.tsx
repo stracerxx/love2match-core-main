@@ -6,8 +6,9 @@ import { listThreads, listMessages, sendMessage, getOrCreateThread, ThreadListIt
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Send, MessageCircle } from "lucide-react";
+import { Loader2, Send, MessageCircle, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { SendGiftModal } from "@/components/SendGiftModal";
 
 type LocationState = {
   partnerId?: string;
@@ -26,6 +27,7 @@ const Messages = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sending, setSending] = useState(false);
   const [content, setContent] = useState("");
+  const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
@@ -230,11 +232,10 @@ const Messages = () => {
                     <button
                       key={t.thread_id}
                       onClick={() => handleSelectThread(t)}
-                      className={`w-full rounded-lg border p-3 text-left transition-all ${
-                        isActive 
-                          ? "border-primary bg-primary/10 shadow-md" 
+                      className={`w-full rounded-lg border p-3 text-left transition-all ${isActive
+                          ? "border-primary bg-primary/10 shadow-md"
                           : "border-border/50 hover:bg-muted/50 hover:border-border"
-                      }`}
+                        }`}
                     >
                       <div className="font-medium text-foreground">
                         {t.partner_display_name || t.partner_email}
@@ -255,8 +256,17 @@ const Messages = () => {
           {selectedThreadId ? (
             <>
               {/* Header */}
-              <div className="border-b border-border/50 bg-gradient-to-r from-card to-secondary/50 p-4">
+              <div className="border-b border-border/50 bg-gradient-to-r from-card to-secondary/50 p-4 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-primary">{selectedPartnerName || "Messages"}</h3>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-accent/40 text-accent hover:bg-accent/10"
+                  onClick={() => setIsGiftModalOpen(true)}
+                >
+                  <Gift className="mr-2 h-4 w-4" />
+                  Send Gift
+                </Button>
               </div>
 
               {/* Messages */}
@@ -274,11 +284,10 @@ const Messages = () => {
                     return (
                       <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                         <div
-                          className={`max-w-[75%] rounded-lg px-4 py-2 text-sm ${
-                            isMine 
-                              ? "bg-gradient-primary text-white shadow-md" 
+                          className={`max-w-[75%] rounded-lg px-4 py-2 text-sm ${isMine
+                              ? "bg-gradient-primary text-white shadow-md"
                               : "bg-secondary/70 text-foreground border border-border/50"
-                          }`}
+                            }`}
                         >
                           <div>{m.content}</div>
                           <div className={`mt-1 text-xs ${isMine ? 'text-white/70' : 'text-muted-foreground'}`}>
@@ -308,8 +317,8 @@ const Messages = () => {
                     disabled={!selectedThreadId || sending}
                     className="bg-background border-border/50"
                   />
-                  <Button 
-                    onClick={handleSend} 
+                  <Button
+                    onClick={handleSend}
                     disabled={!selectedThreadId || sending || !content.trim()}
                     className="bg-primary hover:bg-primary/90 text-white"
                   >
@@ -329,6 +338,15 @@ const Messages = () => {
           )}
         </div>
       </div>
+
+      {selectedThread && (
+        <SendGiftModal
+          isOpen={isGiftModalOpen}
+          onClose={() => setIsGiftModalOpen(false)}
+          receiverEmail={selectedThread.partner_email}
+          receiverName={selectedThread.partner_display_name || selectedThread.partner_email}
+        />
+      )}
     </div>
   );
 };
