@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, X, MapPin, Loader2, Settings, Map, Grid } from 'lucide-react';
+import { Heart, X, MapPin, Loader2, Settings, Map, Grid, Gift } from 'lucide-react';
 import { getDiscoverProfiles, getUserProfile } from '@/lib/profiles';
 import { upsertLike } from '@/lib/likes';
 import { useAuth } from '@/hooks/useAuth';
