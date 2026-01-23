@@ -123,20 +123,6 @@ const Discover = () => {
     );
   }
 
-  const currentProfile = profiles[currentIndex];
-
-  if (!currentProfile) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4 md:ml-20">
-        <div className="text-center">
-          <Heart className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-          <h2 className="mb-2 text-2xl font-bold text-primary">No profiles yet</h2>
-          <p className="text-muted-foreground">Check back soon for new matches!</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-screen flex-col md:ml-20">
       {/* Header */}
