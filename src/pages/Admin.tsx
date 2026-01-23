@@ -39,7 +39,12 @@ const Admin = () => {
   });
 
   // All users for management
-  const { data: allUsers, isLoading: usersLoading } = useQuery({
+  const {
+    data: allUsers,
+    isLoading: usersLoading,
+    isError: isUsersError,
+    error: usersError
+  } = useQuery({
     queryKey: ['admin', 'allUsers'],
     queryFn: adminApi.getAllUsers,
   });
@@ -193,134 +198,147 @@ const Admin = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* User Management */}
             <Card className="shadow-card bg-card border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCog className="h-5 w-5 text-primary" />
-                User Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {usersLoading ? (
-                <div className="flex justify-center items-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : !allUsers || allUsers.length === 0 ? (
-                <p className="text-muted-foreground text-center p-8">No users found.</p>
-              ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {allUsers.slice(0, 10).map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-foreground">{user.email}</span>
-                          <Badge
-                            className={user.role === 'admin' ? 'badge-cyan' : 'badge-gold'}
-                          >
-                            {user.role}
-                          </Badge>
-                          {user.membership_tier && user.membership_tier !== 'standard' && (
-                            <Badge className={getMembershipColor(user.membership_tier)}>
-                              {user.membership_tier === 'plus' ? (
-                                <Star className="h-3 w-3 mr-1" />
-                              ) : (
-                                <Crown className="h-3 w-3 mr-1" />
-                              )}
-                              {user.membership_tier.charAt(0).toUpperCase() + user.membership_tier.slice(1)}
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCog className="h-5 w-5 text-primary" />
+                  User Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {usersLoading ? (
+                  <div className="flex justify-center items-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : isUsersError ? (
+                  <div className="p-8 text-center">
+                    <p className="text-destructive font-medium mb-2">Error loading users</p>
+                    <p className="text-muted-foreground text-sm">{(usersError as Error)?.message || 'Unknown error'}</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => queryClient.invalidateQueries({ queryKey: ['admin', 'allUsers'] })}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : !allUsers || allUsers.length === 0 ? (
+                  <p className="text-muted-foreground text-center p-8">No users found.</p>
+                ) : (
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {allUsers.slice(0, 10).map((user) => (
+                      <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-foreground">{user.email}</span>
+                            <Badge
+                              className={user.role === 'admin' ? 'badge-cyan' : 'badge-gold'}
+                            >
+                              {user.role}
                             </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Joined {format(new Date(user.created_date), 'MMM d, yyyy')}
-                          {user.membership_expires_at && (
-                            <> • Expires {format(new Date(user.membership_expires_at), 'MMM d, yyyy')}</>
-                          )}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-cyan text-cyan hover:bg-cyan/10 hover:text-cyan"
-                          onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'admin' })}
-                          disabled={isProcessing || user.role === 'admin'}
-                        >
-                          Make Admin
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-gold text-gold hover:bg-gold/10 hover:text-gold"
-                          onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'member' })}
-                          disabled={isProcessing || user.role === 'member'}
-                        >
-                          Make Member
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-            </Card>
-
-            {/* Pending Exchanges */}
-            <Card className="shadow-card bg-card border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Coins className="h-5 w-5 text-primary" />
-                Pending Token Exchanges
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {exchangesLoading ? (
-                <div className="flex justify-center items-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : !pendingExchanges || pendingExchanges.length === 0 ? (
-                <p className="text-muted-foreground text-center p-8">No pending exchange requests.</p>
-              ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {pendingExchanges.map((req) => (
-                    <div key={req.id} className="p-4 rounded-lg bg-secondary/30">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <div className="font-medium text-foreground">{req.user_email}</div>
-                          <div className="text-xs text-muted-foreground">{req.user_id}</div>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {format(new Date(req.created_at), 'PP p')}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium text-foreground">
-                          {req.amount} {req.from_token.toUpperCase()} → {req.to_token.toUpperCase()}
+                            {user.membership_tier && user.membership_tier !== 'standard' && (
+                              <Badge className={getMembershipColor(user.membership_tier)}>
+                                {user.membership_tier === 'plus' ? (
+                                  <Star className="h-3 w-3 mr-1" />
+                                ) : (
+                                  <Crown className="h-3 w-3 mr-1" />
+                                )}
+                                {user.membership_tier.charAt(0).toUpperCase() + user.membership_tier.slice(1)}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Joined {format(new Date(user.created_date), 'MMM d, yyyy')}
+                            {user.membership_expires_at && (
+                              <> • Expires {format(new Date(user.membership_expires_at), 'MMM d, yyyy')}</>
+                            )}
+                          </p>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-green-500 text-green-500 hover:bg-green-500/10 hover:text-green-500"
-                            onClick={() => approveMutation.mutate(req.id.toString())}
-                            disabled={isProcessing}
+                            className="border-cyan text-cyan hover:bg-cyan/10 hover:text-cyan"
+                            onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'admin' })}
+                            disabled={isProcessing || user.role === 'admin'}
                           >
-                            <Check className="h-4 w-4 mr-2" /> Approve
+                            Make Admin
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => rejectMutation.mutate(req.id.toString())}
-                            disabled={isProcessing}
+                            className="border-gold text-gold hover:bg-gold/10 hover:text-gold"
+                            onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'member' })}
+                            disabled={isProcessing || user.role === 'member'}
                           >
-                            <X className="h-4 w-4 mr-2" /> Reject
+                            Make Member
                           </Button>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Pending Exchanges */}
+            <Card className="shadow-card bg-card border-border">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Coins className="h-5 w-5 text-primary" />
+                  Pending Token Exchanges
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {exchangesLoading ? (
+                  <div className="flex justify-center items-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : !pendingExchanges || pendingExchanges.length === 0 ? (
+                  <p className="text-muted-foreground text-center p-8">No pending exchange requests.</p>
+                ) : (
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {pendingExchanges.map((req) => (
+                      <div key={req.id} className="p-4 rounded-lg bg-secondary/30">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <div className="font-medium text-foreground">{req.user_email}</div>
+                            <div className="text-xs text-muted-foreground">{req.user_id}</div>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {format(new Date(req.created_at), 'PP p')}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium text-foreground">
+                            {req.amount} {req.from_token.toUpperCase()} → {req.to_token.toUpperCase()}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-green-500 text-green-500 hover:bg-green-500/10 hover:text-green-500"
+                              onClick={() => approveMutation.mutate(req.id.toString())}
+                              disabled={isProcessing}
+                            >
+                              <Check className="h-4 w-4 mr-2" /> Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              onClick={() => rejectMutation.mutate(req.id.toString())}
+                              disabled={isProcessing}
+                            >
+                              <X className="h-4 w-4 mr-2" /> Reject
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
             </Card>
           </div>
         </div>

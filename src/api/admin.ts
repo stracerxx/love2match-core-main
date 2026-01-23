@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
 type UserProfile = {
-  id: number;
+  id: string;
   auth_user_id: string;
   email: string;
   role: string;
@@ -11,6 +11,8 @@ type UserProfile = {
   love2_token_balance?: number;
   membership_tier?: string;
   membership_expires_at?: string;
+  full_name?: string;
+  last_sign_in_at?: string;
 };
 
 type PlatformAnalytics = {
@@ -24,7 +26,7 @@ type PlatformAnalytics = {
 };
 
 interface ExchangeRequest {
-  id: number;
+  id: string;
   user_id: string;
   user_email: string;
   from_token: string;
@@ -70,45 +72,27 @@ export const adminApi = {
 
   // Get all users with profile and user data
   async getAllUsers(): Promise<UserProfile[]> {
-    // Get profiles from the 'profiles' table
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, auth_user_id, created_at, love_token_balance, love2_token_balance, membership_tier, membership_expires_at')
-      .order('created_at', { ascending: false });
+    const { data: users, error } = await supabase
+      .rpc('get_admin_users');
 
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      throw profilesError;
+    if (error) {
+      console.error('Error fetching admin users:', error);
+      throw error;
     }
 
-    // Get users data separately from the 'users' (auth.users) table
-    const { data: users, error: usersError } = await supabase
-      .from('users')
-      .select('id, email, role, created_at'); // Assuming these columns exist in auth.users
-
-    if (usersError) {
-      console.error('Error fetching auth.users:', usersError);
-      // It's possible the 'role' column does not exist on auth.users,
-      // but 'email', 'id', 'created_at' should.
-      // If 'role' is problematic, we may need to remove it or handle it.
-      throw usersError;
-    }
-
-    // Combine the data
-    return profiles?.map(profile => {
-      const user = users?.find(u => u.id === profile.auth_user_id);
-      return {
-        id: profile.id,
-        auth_user_id: profile.auth_user_id,
-        email: user?.email || 'Unknown',
-        role: user?.role || 'member', // Default to 'member' if role not found
-        created_date: user?.created_at || profile.created_at,
-        love_token_balance: profile.love_token_balance,
-        love2_token_balance: profile.love2_token_balance,
-        membership_tier: profile.membership_tier,
-        membership_expires_at: profile.membership_expires_at
-      };
-    }) || [];
+    return (users || []).map((u: any) => ({
+      id: u.id,
+      auth_user_id: u.auth_user_id,
+      email: u.email,
+      role: u.role,
+      full_name: u.full_name,
+      created_date: u.created_at,
+      love_token_balance: u.love_balance,
+      love2_token_balance: u.love2_balance,
+      membership_tier: u.membership_tier,
+      membership_expires_at: u.membership_expires_at,
+      last_sign_in_at: u.last_sign_in_at
+    }));
   },
 
   // Update user role using direct update
@@ -151,7 +135,7 @@ export const adminApi = {
     return swapRequests.map(request => {
       const profile = profiles?.find(p => p.id === request.user_id);
       const user = users?.find(u => u.id === profile?.auth_user_id);
-      
+
       return {
         id: request.id,
         user_id: profile?.auth_user_id || request.user_id.toString(),
@@ -179,8 +163,8 @@ export const adminApi = {
         status: 'rejected',
         updated_at: new Date().toISOString()
       })
-      .eq('id', Number(requestId));
-        
+      .eq('id', requestId);
+
     if (error) throw error;
   },
 
@@ -223,7 +207,7 @@ export const adminApi = {
       .select('id, love_token_balance, love2_token_balance')
       .eq('auth_user_id', userId)
       .single();
-    
+
     if (profileError) throw profileError;
     if (!profile) throw new Error('Profile not found');
 
@@ -289,12 +273,12 @@ export const adminApi = {
       .select('id')
       .eq('auth_user_id', userId)
       .single();
-    
+
     if (profileError) throw profileError;
     if (!profile) throw new Error('Profile not found');
 
     const updateData: any = { membership_tier: membershipTier };
-    
+
     if (expiresAt) {
       updateData.membership_expires_at = expiresAt;
     } else if (membershipTier === 'standard') {
