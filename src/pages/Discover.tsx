@@ -181,100 +181,142 @@ const Discover = () => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-1 items-center justify-center p-4 md:p-8">
-          <div className="w-full max-w-md">
-            <Card className="shadow-card-hover overflow-hidden animate-scale-in border-0">
-              <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20">
-                {currentProfile.photos?.[0] ? (
-                  <img
-                    src={currentProfile.photos[0]}
-                    alt={currentProfile.display_name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center bg-gradient-hero">
-                    <Heart className="h-24 w-24 text-white/50" />
-                  </div>
-                )}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 text-white">
-                  <h2 className="mb-2 text-3xl font-bold">
-                    {currentProfile.display_name}
-                  </h2>
-                  {(currentProfile.demographics as any)?.location_lat && (currentProfile.demographics as any)?.location_lng && userLocation && (
-                    <div className="flex items-center gap-1 text-sm">
-                      <MapPin className="h-4 w-4" />
-                      <span>
-                        {calculateDistance(
-                          userLocation.lat,
-                          userLocation.lng,
-                          Number((currentProfile.demographics as any).location_lat),
-                          Number((currentProfile.demographics as any).location_lng)
-                        )} miles away
-                      </span>
+        <div className="flex-1 p-4 md:p-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Vertical Feed - All Profiles */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {profiles.map((profile, index) => (
+                <Card key={profile.id} className="shadow-card-hover overflow-hidden animate-scale-in border-0">
+                  <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20">
+                    {profile.photos?.[0] ? (
+                      <img
+                        src={profile.photos[0]}
+                        alt={profile.display_name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-gradient-hero">
+                        <Heart className="h-24 w-24 text-white/50" />
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 text-white">
+                      <h2 className="mb-2 text-2xl font-bold">
+                        {profile.display_name}
+                      </h2>
+                      {(profile.demographics as any)?.location_lat && (profile.demographics as any)?.location_lng && userLocation && (
+                        <div className="flex items-center gap-1 text-sm">
+                          <MapPin className="h-4 w-4" />
+                          <span>
+                            {calculateDistance(
+                              userLocation.lat,
+                              userLocation.lng,
+                              Number((profile.demographics as any).location_lat),
+                              Number((profile.demographics as any).location_lng)
+                            )} miles away
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-
-              <CardContent className="p-6 bg-card">
-                {currentProfile.bio && (
-                  <p className="mb-4 text-foreground text-sm">{currentProfile.bio}</p>
-                )}
-
-                {currentProfile.tags && currentProfile.tags.length > 0 && (
-                  <div className="mb-6 flex flex-wrap gap-2">
-                    {currentProfile.tags.map((tag, i) => (
-                      <Badge key={i} variant="secondary" className="bg-secondary/60">
-                        {tag}
-                      </Badge>
-                    ))}
                   </div>
-                )}
 
-                <div className="flex gap-3">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="flex-1 border border-muted-foreground/30 hover:bg-muted/50"
-                    onClick={handlePass}
-                  >
-                    <X className="mr-2 h-5 w-5" />
-                    Pass
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="flex-1 gradient-primary hover:shadow-lg text-white font-semibold"
-                    onClick={handleLike}
-                  >
-                    <Heart className="mr-2 h-5 w-5" fill="currentColor" />
-                    Like
-                  </Button>
-                </div>
+                  <CardContent className="p-6 bg-card">
+                    {profile.bio && (
+                      <p className="mb-4 text-foreground text-sm line-clamp-3">{profile.bio}</p>
+                    )}
 
-                <Button
-                  variant="ghost"
-                  className="w-full mt-4 text-accent hover:text-accent/80 hover:bg-accent/10 font-medium"
-                  onClick={() => setIsGiftModalOpen(true)}
-                >
-                  <Gift className="mr-2 h-4 w-4" />
-                  Send Gift
-                </Button>
-              </CardContent>
-            </Card>
+                    {profile.tags && profile.tags.length > 0 && (
+                      <div className="mb-4 flex flex-wrap gap-2">
+                        {profile.tags.slice(0, 3).map((tag, i) => (
+                          <Badge key={i} variant="secondary" className="bg-secondary/60">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {profile.tags.length > 3 && (
+                          <Badge variant="secondary" className="bg-secondary/60">
+                            +{profile.tags.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
 
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              {currentIndex + 1} of {profiles.length} profiles
-            </p>
+                    <div className="flex gap-3">
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="flex-1 border border-muted-foreground/30 hover:bg-muted/50"
+                        onClick={async () => {
+                          if (!user) return;
+                          const { error } = await upsertLike(user.id, profile.id, "pass");
+                          if (error) {
+                            toast({
+                              title: 'Could not pass',
+                              description: error.message,
+                              variant: 'destructive',
+                            });
+                          }
+                        }}
+                      >
+                        <X className="mr-2 h-5 w-5" />
+                        Pass
+                      </Button>
+                      <Button
+                        size="lg"
+                        className="flex-1 gradient-primary hover:shadow-lg text-white font-semibold"
+                        onClick={async () => {
+                          if (!user) return;
+                          const { error } = await upsertLike(user.id, profile.id, "like");
+                          if (error) {
+                            toast({
+                              title: 'Like failed',
+                              description: error.message,
+                              variant: 'destructive',
+                            });
+                            return;
+                          }
+                          toast({
+                            title: '❤️ Liked!',
+                            description: "If they like you back, it's a match!",
+                          });
+                        }}
+                      >
+                        <Heart className="mr-2 h-5 w-5" fill="currentColor" />
+                        Like
+                      </Button>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      className="w-full mt-4 text-accent hover:text-accent/80 hover:bg-accent/10 font-medium"
+                      onClick={() => {
+                        setCurrentIndex(index);
+                        setIsGiftModalOpen(true);
+                      }}
+                    >
+                      <Gift className="mr-2 h-4 w-4" />
+                      Send Gift
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {profiles.length === 0 && (
+              <div className="text-center py-12">
+                <Heart className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+                <h2 className="mb-2 text-2xl font-bold text-primary">No profiles yet</h2>
+                <p className="text-muted-foreground">Check back soon for new matches!</p>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {currentProfile && (
+      {profiles[currentIndex] && (
         <SendGiftModal
           isOpen={isGiftModalOpen}
           onClose={() => setIsGiftModalOpen(false)}
-          receiverEmail={currentProfile.email}
-          receiverName={currentProfile.display_name}
+          receiverEmail={profiles[currentIndex].email}
+          receiverName={profiles[currentIndex].display_name}
         />
       )}
     </div>
