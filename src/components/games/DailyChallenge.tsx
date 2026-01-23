@@ -206,17 +206,7 @@ export const DailyChallenge = () => {
                                     </div>
                                 </div>
 
-                                {!challenge.completed && (
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => completeChallenge(challenge.id)}
-                                        disabled={!user}
-                                        className="w-full mt-3"
-                                    >
-                                        Mark Complete (Demo)
-                                    </Button>
-                                )}
+
                             </div>
                         ))}
                     </div>
