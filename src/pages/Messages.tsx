@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { listThreads, listMessages, sendMessage, getOrCreateThread, ThreadListItem, Message } from "@/lib/messages";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Send, MessageCircle, Gift } from "lucide-react";
+import { Loader2, Send, MessageCircle, Gift, Video, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SendGiftModal } from "@/components/SendGiftModal";
 
@@ -18,6 +18,7 @@ const Messages = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
   const { partnerId } = (location.state || {}) as LocationState;
 
   const [loading, setLoading] = useState(true);
@@ -233,8 +234,8 @@ const Messages = () => {
                       key={t.thread_id}
                       onClick={() => handleSelectThread(t)}
                       className={`w-full rounded-lg border p-3 text-left transition-all ${isActive
-                          ? "border-primary bg-primary/10 shadow-md"
-                          : "border-border/50 hover:bg-muted/50 hover:border-border"
+                        ? "border-primary bg-primary/10 shadow-md"
+                        : "border-border/50 hover:bg-muted/50 hover:border-border"
                         }`}
                     >
                       <div className="font-medium text-foreground">
@@ -258,15 +259,35 @@ const Messages = () => {
               {/* Header */}
               <div className="border-b border-border/50 bg-gradient-to-r from-card to-secondary/50 p-4 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-primary">{selectedPartnerName || "Messages"}</h3>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-accent/40 text-accent hover:bg-accent/10"
-                  onClick={() => setIsGiftModalOpen(true)}
-                >
-                  <Gift className="mr-2 h-4 w-4" />
-                  Send Gift
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-primary/40 text-primary hover:bg-primary/10"
+                    onClick={() => navigate(`/video-call?matchId=${selectedThread?.partner_id}&callType=audio`)}
+                    title="Start audio call"
+                  >
+                    <Phone className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-primary/40 text-primary hover:bg-primary/10"
+                    onClick={() => navigate(`/video-call?matchId=${selectedThread?.partner_id}&callType=video`)}
+                    title="Start video call"
+                  >
+                    <Video className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-accent/40 text-accent hover:bg-accent/10"
+                    onClick={() => setIsGiftModalOpen(true)}
+                  >
+                    <Gift className="mr-2 h-4 w-4" />
+                    Send Gift
+                  </Button>
+                </div>
               </div>
 
               {/* Messages */}
@@ -285,8 +306,8 @@ const Messages = () => {
                       <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                         <div
                           className={`max-w-[75%] rounded-lg px-4 py-2 text-sm ${isMine
-                              ? "bg-gradient-primary text-white shadow-md"
-                              : "bg-secondary/70 text-foreground border border-border/50"
+                            ? "bg-gradient-primary text-white shadow-md"
+                            : "bg-secondary/70 text-foreground border border-border/50"
                             }`}
                         >
                           <div>{m.content}</div>
