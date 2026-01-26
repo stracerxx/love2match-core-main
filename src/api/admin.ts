@@ -202,13 +202,13 @@ export const adminApi = {
   // Admin faucet functions
   async distributeTokens(userId: string, tokenType: 'LOVE' | 'LOVE2', amount: number, description: string) {
     // First get the profile ID from the auth_user_id
-    const { data: profile, error: profileError } = await supabase
+    const { data: profiles, error: profileError } = await supabase
       .from('profiles')
       .select('id, love_token_balance, love2_token_balance')
-      .eq('auth_user_id', userId)
-      .single();
+      .eq('auth_user_id', userId);
 
     if (profileError) throw profileError;
+    const profile = profiles?.[0];
     if (!profile) throw new Error('Profile not found');
 
     const currentBalance = tokenType === 'LOVE' ? Number(profile.love_token_balance || 0) : Number(profile.love2_token_balance || 0);
@@ -227,7 +227,7 @@ export const adminApi = {
     const { error: transactionError } = await supabase
       .from('token_transactions')
       .insert({
-        user_id: profile.id,
+        user_id: userId, // Use auth_user_id (referenced in token_transactions)
         type: 'faucet',
         token_type: tokenType,
         amount: amount,
