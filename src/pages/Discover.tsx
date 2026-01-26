@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, X, MapPin, Loader2, Settings, Map, Grid, Gift } from 'lucide-react';
+import { Heart, X, MapPin, Loader2, Settings, Map, Grid, Gift, MessageCircle } from "lucide-react";
 import { getDiscoverProfiles, getUserProfile } from '@/lib/profiles';
 import { upsertLike } from '@/lib/likes';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,10 +14,10 @@ import MapView from '@/components/discover/MapView';
 import { SendGiftModal } from '@/components/SendGiftModal';
 
 const Discover = () => {
+  const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [profiles, setProfiles] = useState<UserProfile[]>([]);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -27,7 +28,7 @@ const Discover = () => {
     if (!user) return;
 
     setLoading(true);
-    const { profiles: data, error } = await getDiscoverProfiles(user.id);
+    const { profiles: data, error }: any = await getDiscoverProfiles(user.id);
 
     if (error) {
       toast({
@@ -36,7 +37,7 @@ const Discover = () => {
         variant: 'destructive',
       });
     } else {
-      setProfiles(data);
+      setProfiles(data || []);
     }
 
     setLoading(false);
@@ -46,7 +47,6 @@ const Discover = () => {
     const fetchUserProfile = async () => {
       if (user) {
         const { profile } = await getUserProfile(user.id);
-        setUserProfile(profile);
         loadProfiles();
         if (profile) {
           const demo = profile.demographics as any;
@@ -67,7 +67,6 @@ const Discover = () => {
     const target = profiles[currentIndex];
     if (!target) return;
 
-    // Optimistic UI
     nextProfile();
 
     const { error } = await upsertLike(user.id, target.id, "like");
@@ -91,7 +90,6 @@ const Discover = () => {
     const target = profiles[currentIndex];
     if (!target) return;
 
-    // Optimistic next
     nextProfile();
 
     const { error } = await upsertLike(user.id, target.id, "pass");
@@ -129,7 +127,7 @@ const Discover = () => {
       <div className="border-b border-border/50 bg-gradient-to-r from-background to-card p-4 md:px-8 md:py-6">
         <div className="flex items-center justify-between max-w-2xl mx-auto w-full">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-primary">Discover</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-primary">DISCOVER - UPDATED</h1>
             <p className="text-sm text-muted-foreground mt-1">{profiles.length} of {profiles.length} profiles</p>
           </div>
           <div className="flex gap-2">
@@ -169,7 +167,6 @@ const Discover = () => {
       ) : (
         <div className="flex-1 p-4 md:p-8">
           <div className="max-w-7xl mx-auto">
-            {/* Vertical Feed - All Profiles */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {profiles.map((profile, index) => (
                 <Card key={profile.id} className="shadow-card-hover overflow-hidden animate-scale-in border-0">
@@ -212,7 +209,7 @@ const Discover = () => {
 
                     {profile.tags && profile.tags.length > 0 && (
                       <div className="mb-4 flex flex-wrap gap-2">
-                        {profile.tags.slice(0, 3).map((tag, i) => (
+                        {profile.tags.slice(0, 3).map((tag: string, i: number) => (
                           <Badge key={i} variant="secondary" className="bg-secondary/60">
                             {tag}
                           </Badge>
@@ -225,44 +222,37 @@ const Discover = () => {
                       </div>
                     )}
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-2">
                       <Button
-                        size="lg"
+                        size="icon"
                         variant="outline"
-                        className="flex-1 border border-muted-foreground/30 hover:bg-muted/50"
+                        className="h-12 w-12 border-muted-foreground/30"
                         onClick={async () => {
                           if (!user) return;
                           const { error } = await upsertLike(user.id, profile.id, "pass");
-                          if (error) {
-                            toast({
-                              title: 'Could not pass',
-                              description: error.message,
-                              variant: 'destructive',
-                            });
-                          }
+                          if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); }
                         }}
                       >
-                        <X className="mr-2 h-5 w-5" />
-                        Pass
+                        <X className="h-6 w-6 text-muted-foreground" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-12 w-12 border-primary/30 text-primary hover:bg-primary/10"
+                        onClick={() => {
+                          navigate("/messages", { state: { partnerId: profile.id } });
+                        }}
+                      >
+                        <MessageCircle className="h-6 w-6" />
                       </Button>
                       <Button
                         size="lg"
-                        className="flex-1 gradient-primary hover:shadow-lg text-white font-semibold"
+                        className="flex-1 gradient-primary hover:shadow-lg text-white font-semibold h-12"
                         onClick={async () => {
                           if (!user) return;
                           const { error } = await upsertLike(user.id, profile.id, "like");
-                          if (error) {
-                            toast({
-                              title: 'Like failed',
-                              description: error.message,
-                              variant: 'destructive',
-                            });
-                            return;
-                          }
-                          toast({
-                            title: '❤️ Liked!',
-                            description: "If they like you back, it's a match!",
-                          });
+                          if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+                          toast({ title: '❤️ Liked!', description: "Check your matches!" });
                         }}
                       >
                         <Heart className="mr-2 h-5 w-5" fill="currentColor" />
