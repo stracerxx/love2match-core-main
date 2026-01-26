@@ -36,11 +36,25 @@ export async function listMessages(threadId: string) {
 }
 
 export async function sendMessage(threadId: string, senderId: string, content: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.rpc("escrow_v13_final", {
+    p_tid: threadId,
+    p_sid: senderId,
+    p_content: content,
+  });
+
+  if (error) return { message: null, error };
+
+  const result = data as any;
+  if (!result.success) {
+    return { message: null, error: { message: result.error } };
+  }
+
+  // Fetch the created message to keep existing return type compatibility
+  const { data: message, error: messageError } = await supabase
     .from("messages")
-    .insert({ thread_id: threadId, sender_id: senderId, content })
-    .select()
+    .select("*")
+    .eq("id", result.message_id)
     .single();
 
-  return { message: data || null, error };
+  return { message: message || null, error: messageError };
 }
