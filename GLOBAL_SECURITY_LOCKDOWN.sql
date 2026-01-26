@@ -1,4 +1,4 @@
--- GLOBAL SECURITY LOCKDOWN AND RLS HARDENING (v2 - Fixed uuid/bigint mismatch)
+-- GLOBAL SECURITY LOCKDOWN AND RLS HARDENING (v3 - Allowed Authenticated Discovery)
 -- This script enables RLS on all tables and applies strict access control policies.
 
 -- 1. ENABLE RLS ON ALL TABLES
@@ -21,7 +21,12 @@ BEGIN
     END LOOP;
 END $$;
 
--- 3. USERS TABLE POLICIES (Using ::text for id comparison to avoid uuid/bigint mismatch)
+-- 3. USERS TABLE POLICIES
+-- Allow authenticated users to see others for discovery
+CREATE POLICY "Users are viewable by authenticated users" ON public.users 
+FOR SELECT TO authenticated USING (true);
+
+-- Users can only manage their own record
 CREATE POLICY "Users can manage own record" ON public.users 
 FOR ALL USING (auth.uid()::text = id::text) WITH CHECK (auth.uid()::text = id::text);
 
