@@ -127,7 +127,7 @@ const Discover = () => {
       <div className="border-b border-border/50 bg-gradient-to-r from-background to-card p-4 md:px-8 md:py-6">
         <div className="flex items-center justify-between max-w-2xl mx-auto w-full">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-primary">DISCOVER - UPDATED</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-primary">Discover</h1>
             <p className="text-sm text-muted-foreground mt-1">{profiles.length} of {profiles.length} profiles</p>
           </div>
           <div className="flex gap-2">
