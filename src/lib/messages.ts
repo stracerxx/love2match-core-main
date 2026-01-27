@@ -42,18 +42,19 @@ export async function sendMessage(threadId: string, senderId: string, content: s
     p_content: content,
   });
 
-  if (error) return { message: null, error };
-
-  const result = data as any;
-  if (!result.success) {
-    return { message: null, error: { message: result.error } };
+  if (error) {
+    console.error("Error sending message:", error);
+    return { message: null, error };
   }
+
+  // The RPC now returns the UUID directly on success
+  const messageId = data as unknown as string;
 
   // Fetch the created message to keep existing return type compatibility
   const { data: message, error: messageError } = await supabase
     .from("messages")
     .select("*")
-    .eq("id", result.message_id)
+    .eq("id", messageId)
     .single();
 
   return { message: message || null, error: messageError };

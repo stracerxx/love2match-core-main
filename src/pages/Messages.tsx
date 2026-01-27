@@ -184,7 +184,7 @@ const Messages = () => {
     if (error || !message) {
       toast({
         title: "Send failed",
-        description: error?.message || "Unable to send message.",
+        description: error ? `Error: ${JSON.stringify(error)}` : "Message fetch returned null data without error.",
         variant: "destructive",
       });
       // rollback temp
