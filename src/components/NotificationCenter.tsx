@@ -1,23 +1,28 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { useToast } from './ui/use-toast';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+
+type NotificationType = Database['public']['Tables']['notifications']['Row'];
 
 interface Notification {
   id: string;
-  user_email: string;
+  user_id: string;
   type: 'message' | 'match' | 'event_reminder' | 'event_rsvp' | 'like' | 'gift' | 'token' | 'system';
   title: string;
   body: string;
-  action_url?: string;
-  related_user_email?: string;
-  related_entity_type?: string;
-  related_entity_id?: string;
+  action_url?: string | null;
+  related_user_id?: string | null;
+  related_entity_type?: string | null;
+  related_entity_id?: string | null;
   is_read: boolean;
-  read_at?: string;
-  image_url?: string;
+  read_at?: string | null;
+  image_url?: string | null;
   created_at: string;
 }
 
@@ -35,54 +40,125 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [profileId, setProfileId] = useState<number | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Get the profile ID (bigint) from the profiles table
   useEffect(() => {
-    if (user?.email) {
+    const getProfileId = async () => {
+      if (!user?.id) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .single();
+
+      if (data?.id) {
+        setProfileId(data.id);
+      }
+    };
+
+    getProfileId();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (profileId) {
       fetchNotifications();
+
+      // Set up real-time subscription for new notifications
+      const channel = supabase
+        .channel('notifications-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${profileId}`
+          },
+          (payload) => {
+            const newNotification = payload.new as Notification;
+            setNotifications(prev => [newNotification, ...prev]);
+            toast({
+              title: newNotification.title,
+              description: newNotification.body,
+            });
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [user?.email]);
+  }, [profileId]);
 
   const fetchNotifications = async () => {
+    if (!profileId) return;
+
     try {
       setLoading(true);
-      // TODO: Replace with actual API call to fetch notifications from database
-      // For now, show empty state - notifications will be populated by real events
-      // Example API call:
-      // const { data, error } = await supabase
-      //   .from('notifications')
-      //   .select('*')
-      //   .eq('user_email', user?.email)
-      //   .order('created_at', { ascending: false })
-      //   .limit(maxNotifications);
-      
-      // No mock data - show empty state until real notifications are available
+
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', profileId as any)
+        .order('created_at', { ascending: false })
+        .limit(maxNotifications);
+
+      if (error) {
+        // Table might not exist yet - show empty state gracefully
+        if (error.code === '42P01') {
+          console.warn('Notifications table does not exist. Run ADD_NOTIFICATIONS_TABLE.sql to create it.');
+          setNotifications([]);
+          return;
+        }
+        throw error;
+      }
+
+      setNotifications((data as Notification[]) || []);
+    } catch (error: any) {
+      console.error('Error fetching notifications:', error);
+      // Don't show error toast for missing table or type mismatch
+      if (error.code !== '42P01' && error.code !== '42883') {
+        toast({
+          title: 'Error',
+          description: 'Failed to load notifications',
+          variant: 'destructive'
+        });
+      }
       setNotifications([]);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load notifications',
-        variant: 'destructive'
-      });
     } finally {
       setLoading(false);
     }
   };
 
   const markAsRead = async (notificationId: string) => {
+    if (!profileId) return;
+
     try {
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif.id === notificationId 
+      const { error } = await supabase
+        .from('notifications')
+        .update({
+          is_read: true,
+          read_at: new Date().toISOString()
+        })
+        .eq('id', notificationId)
+        .eq('user_id', profileId as any);
+
+      if (error) throw error;
+
+      setNotifications(prev =>
+        prev.map(notif =>
+          notif.id === notificationId
             ? { ...notif, is_read: true, read_at: new Date().toISOString() }
             : notif
         )
       );
-
-      // Mock API call
-      console.log('Marking notification as read:', notificationId);
     } catch (error) {
+      console.error('Error marking notification as read:', error);
       toast({
         title: 'Error',
         description: 'Failed to mark notification as read',
@@ -92,8 +168,21 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   };
 
   const markAllAsRead = async () => {
+    if (!profileId) return;
+
     try {
-      setNotifications(prev => 
+      const { error } = await supabase
+        .from('notifications')
+        .update({
+          is_read: true,
+          read_at: new Date().toISOString()
+        })
+        .eq('user_id', profileId as any)
+        .eq('is_read', false);
+
+      if (error) throw error;
+
+      setNotifications(prev =>
         prev.map(notif => ({
           ...notif,
           is_read: true,
@@ -101,14 +190,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         }))
       );
 
-      // Mock API call
-      console.log('Marking all notifications as read');
-      
       toast({
         title: 'Success',
         description: 'All notifications marked as read',
       });
     } catch (error) {
+      console.error('Error marking all notifications as read:', error);
       toast({
         title: 'Error',
         description: 'Failed to mark notifications as read',
@@ -118,12 +205,20 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   };
 
   const deleteNotification = async (notificationId: string) => {
-    try {
-      setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
+    if (!profileId) return;
 
-      // Mock API call
-      console.log('Deleting notification:', notificationId);
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId)
+        .eq('user_id', profileId as any);
+
+      if (error) throw error;
+
+      setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
     } catch (error) {
+      console.error('Error deleting notification:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete notification',
@@ -198,7 +293,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             </Badge>
           )}
         </div>
-        
+
         <div className="flex gap-2">
           <Button
             variant={filter === 'all' ? 'default' : 'outline'}
@@ -225,11 +320,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       {/* Notifications List */}
       <div className="space-y-3 max-h-96 overflow-y-auto">
         {filteredNotifications.map(notification => (
-          <Card 
+          <Card
             key={notification.id}
-            className={`cursor-pointer transition-all hover:shadow-md ${
-              !notification.is_read ? 'border-l-4 border-l-primary' : ''
-            }`}
+            className={`cursor-pointer transition-all hover:shadow-md ${!notification.is_read ? 'border-l-4 border-l-primary' : ''
+              }`}
             onClick={() => handleNotificationClick(notification)}
           >
             <CardContent className="p-4">
@@ -249,30 +343,24 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                       {formatTimeAgo(notification.created_at)}
                     </span>
                   </div>
-                  
+
                   <p className={`text-sm ${!notification.is_read ? 'text-foreground' : 'text-muted-foreground'} mb-2`}>
                     {notification.body}
                   </p>
 
                   {/* Notification Metadata */}
                   <div className="flex items-center gap-2">
-                    <Badge 
-                      variant="secondary" 
+                    <Badge
+                      variant="secondary"
                       className={`text-xs capitalize ${getNotificationColor(notification.type)}`}
                     >
                       {notification.type.replace('_', ' ')}
                     </Badge>
-                    
-                    {notification.related_user_email && (
-                      <span className="text-xs text-muted-foreground">
-                        From: {notification.related_user_email}
-                      </span>
-                    )}
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-1">
                   {!notification.is_read && (
                     <Button
                       variant="ghost"
@@ -311,7 +399,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             <div className="text-4xl mb-4">🔔</div>
             <h3 className="text-lg font-medium mb-2">No notifications</h3>
             <p className="text-muted-foreground">
-              {filter === 'unread' 
+              {filter === 'unread'
                 ? "You're all caught up! No unread notifications."
                 : "You don't have any notifications yet."
               }
@@ -342,3 +430,39 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     </div>
   );
 };
+
+/**
+ * Helper function to create a notification (can be used from other components)
+ */
+export async function createNotification(
+  userId: string,
+  type: Notification['type'],
+  title: string,
+  body: string,
+  options?: {
+    action_url?: string;
+    related_user_id?: string;
+    related_entity_type?: string;
+    related_entity_id?: string;
+    image_url?: string;
+  }
+) {
+  const { error } = await supabase
+    .from('notifications')
+    .insert({
+      user_id: userId,
+      type,
+      title,
+      body,
+      action_url: options?.action_url,
+      related_user_id: options?.related_user_id,
+      related_entity_type: options?.related_entity_type,
+      related_entity_id: options?.related_entity_id,
+      image_url: options?.image_url,
+    });
+
+  if (error) {
+    console.error('Error creating notification:', error);
+    throw error;
+  }
+}

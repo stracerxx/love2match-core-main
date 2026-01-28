@@ -1,0 +1,102 @@
+﻿
+> vite_react_shadcn_ts@0.0.0 lint
+> eslint .
+
+
+C:\Users\gamed\love2match-core-main\src\components\AppConfigPanel.tsx
+   55:6   warning  React Hook useEffect has a missing dependency: 'fetchConfigs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  232:56  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  370:64  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+
+C:\Users\gamed\love2match-core-main\src\components\ContentMarketplace.tsx
+  47:6  warning  React Hook useEffect has a missing dependency: 'fetchContent'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\gamed\love2match-core-main\src\components\GiftShop.tsx
+  39:6  warning  React Hook useEffect has a missing dependency: 'fetchGifts'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\gamed\love2match-core-main\src\components\NotificationCenter.tsx
+   76:6   warning  React Hook useEffect has missing dependencies: 'fetchNotifications' and 'toast'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  417:23  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components       react-refresh/only-export-components
+
+C:\Users\gamed\love2match-core-main\src\components\ReportSystem.tsx
+  229:66  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  271:74  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\gamed\love2match-core-main\src\components\TokenTransactionHistory.tsx
+  47:6  warning  React Hook useEffect has a missing dependency: 'fetchTransactions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\gamed\love2match-core-main\src\components\TypingIndicator.tsx
+   13:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components        react-refresh/only-export-components
+   86:6   warning  React Hook useEffect has missing dependencies: 'isTyping' and 'sendTypingSignal'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  137:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components        react-refresh/only-export-components
+
+C:\Users\gamed\love2match-core-main\src\components\VideoCallInterface.tsx
+  162:6  warning  React Hook useCallback has a missing dependency: 'endCall'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+  204:6  warning  React Hook useEffect has a missing dependency: 'cleanupCall'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\gamed\love2match-core-main\src\components\admin\TreasuryPanel.tsx
+   35:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  196:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\gamed\love2match-core-main\src\components\discover\DiscoverySettings.tsx
+  44:8   warning  React Hook useEffect has a missing dependency: 'loadPreferences'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  48:56  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+  55:61  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+  81:46  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+
+C:\Users\gamed\love2match-core-main\src\components\discover\MapView.tsx
+   93:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:68  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  227:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  230:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\gamed\love2match-core-main\src\components\games\DailyChallenge.tsx
+  66:8  warning  React Hook useEffect has a missing dependency: 'loadChallenges'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\gamed\love2match-core-main\src\components\ui\badge.tsx
+  29:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\gamed\love2match-core-main\src\components\ui\button.tsx
+  47:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\gamed\love2match-core-main\src\components\ui\form.tsx
+  129:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\gamed\love2match-core-main\src\components\ui\navigation-menu.tsx
+  111:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\gamed\love2match-core-main\src\components\ui\sidebar.tsx
+  636:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\gamed\love2match-core-main\src\components\ui\sonner.tsx
+  27:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\gamed\love2match-core-main\src\components\ui\toggle.tsx
+  37:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\gamed\love2match-core-main\src\hooks\useAuth.tsx
+  47:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\gamed\love2match-core-main\src\lib\supabase.ts
+  17:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\gamed\love2match-core-main\src\pages\AdminTest.tsx
+  14:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\gamed\love2match-core-main\src\pages\Discover.tsx
+  68:6  warning  React Hook useEffect has a missing dependency: 'loadProfiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\gamed\love2match-core-main\src\pages\Health.tsx
+  41:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\gamed\love2match-core-main\src\pages\Profile.tsx
+  82:6  warning  React Hook useEffect has a missing dependency: 'loadProfile'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+Γ£û 45 problems (22 errors, 23 warnings)
+

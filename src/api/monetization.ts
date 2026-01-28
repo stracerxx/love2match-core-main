@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from '@/integrations/supabase/client';
 
 // =========================
@@ -34,7 +35,7 @@ export async function createSubscriptionTier(data: CreateSubscriptionTierData) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) throw new Error('User not authenticated');
 
-  const { data: tier, error } = await supabase
+  const { data: tier, error } = await (supabase as any)
     .from('creator_subscription_tiers')
     .insert({
       creator_id: userData.user.id,
@@ -51,7 +52,7 @@ export async function createSubscriptionTier(data: CreateSubscriptionTierData) {
 }
 
 export async function getCreatorSubscriptionTiers(creatorId?: string) {
-  let query = supabase
+  let query = (supabase as any)
     .from('creator_subscription_tiers')
     .select('*')
     .eq('is_active', true);
@@ -66,7 +67,7 @@ export async function getCreatorSubscriptionTiers(creatorId?: string) {
 }
 
 export async function updateSubscriptionTier(tierId: string, updates: Partial<CreatorSubscriptionTier>) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('creator_subscription_tiers')
     .update(updates)
     .eq('id', tierId)
@@ -101,7 +102,7 @@ export async function subscribeToCreator(tierId: string) {
   if (!userData.user) throw new Error('User not authenticated');
 
   // Get tier details
-  const { data: tier, error: tierError } = await supabase
+  const { data: tier, error: tierError } = await (supabase as any)
     .from('creator_subscription_tiers')
     .select('*')
     .eq('id', tierId)
@@ -113,7 +114,7 @@ export async function subscribeToCreator(tierId: string) {
   const startsAt = new Date().toISOString();
   const endsAt = calculateSubscriptionEndDate(startsAt, tier.duration_type);
 
-  const { data: subscription, error } = await supabase
+  const { data: subscription, error } = await (supabase as any)
     .from('creator_subscriptions')
     .insert({
       subscriber_id: userData.user.id,
@@ -133,7 +134,7 @@ export async function subscribeToCreator(tierId: string) {
   if (error) throw error;
 
   // Update subscriber count
-  await supabase
+  await (supabase as any)
     .from('creator_subscription_tiers')
     .update({ current_subscribers: tier.current_subscribers + 1 })
     .eq('id', tierId);
@@ -145,7 +146,7 @@ export async function getUserSubscriptions() {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) throw new Error('User not authenticated');
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('creator_subscriptions')
     .select(`
       *,
@@ -160,11 +161,11 @@ export async function getUserSubscriptions() {
 }
 
 export async function cancelSubscription(subscriptionId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('creator_subscriptions')
-    .update({ 
+    .update({
       status: 'canceled',
-      auto_renew: false 
+      auto_renew: false
     })
     .eq('id', subscriptionId)
     .select()
@@ -204,7 +205,7 @@ export async function createSubscriptionBox(data: Omit<SubscriptionBox, 'id' | '
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) throw new Error('User not authenticated');
 
-  const { data: box, error } = await supabase
+  const { data: box, error } = await (supabase as any)
     .from('subscription_boxes')
     .insert({
       creator_id: userData.user.id,
@@ -219,7 +220,7 @@ export async function createSubscriptionBox(data: Omit<SubscriptionBox, 'id' | '
 }
 
 export async function getSubscriptionBoxes(creatorId?: string) {
-  let query = supabase
+  let query = (supabase as any)
     .from('subscription_boxes')
     .select('*')
     .eq('is_active', true);
@@ -238,7 +239,7 @@ export async function purchaseSubscriptionBox(boxId: string) {
   if (!userData.user) throw new Error('User not authenticated');
 
   // Get box details
-  const { data: box, error: boxError } = await supabase
+  const { data: box, error: boxError } = await (supabase as any)
     .from('subscription_boxes')
     .select('*')
     .eq('id', boxId)
@@ -251,7 +252,7 @@ export async function purchaseSubscriptionBox(boxId: string) {
     throw new Error('Box is sold out');
   }
 
-  const { data: purchase, error } = await supabase
+  const { data: purchase, error } = await (supabase as any)
     .from('box_purchases')
     .insert({
       user_id: userData.user.id,
@@ -268,7 +269,7 @@ export async function purchaseSubscriptionBox(boxId: string) {
   if (error) throw error;
 
   // Update purchase count and quantity
-  await supabase
+  await (supabase as any)
     .from('subscription_boxes')
     .update({
       purchases_count: box.purchases_count + 1,
@@ -308,7 +309,7 @@ export async function sendTip(data: {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) throw new Error('User not authenticated');
 
-  const { data: tip, error } = await supabase
+  const { data: tip, error } = await (supabase as any)
     .from('tips')
     .insert({
       sender_id: userData.user.id,
@@ -330,7 +331,7 @@ export async function getUserTips() {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) throw new Error('User not authenticated');
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('tips')
     .select(`
       *,
@@ -350,7 +351,7 @@ export async function getUserTips() {
 
 function calculateSubscriptionEndDate(startDate: string, durationType: string): string {
   const start = new Date(startDate);
-  let end = new Date(start);
+  const end = new Date(start);
 
   switch (durationType) {
     case 'monthly':
@@ -373,7 +374,7 @@ export async function checkUserSubscription(creatorId: string): Promise<boolean>
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return false;
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('creator_subscriptions')
     .select('id')
     .eq('subscriber_id', userData.user.id)

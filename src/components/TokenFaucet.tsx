@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,8 @@ interface FaucetResult {
   amount?: number;
   new_balance?: number;
   error?: string;
+  hours_remaining?: number;
+  next_claim_at?: string;
 }
 
 /**
@@ -56,14 +59,22 @@ export const TokenFaucet = () => {
           title: '🎉 Tokens Claimed!',
           description: `You received ${result.amount} LOVE tokens! New balance: ${result.new_balance}`,
         });
-        
+
         // Invalidate wallet queries to refresh balance
         queryClient.invalidateQueries({ queryKey: ['wallet'] });
         queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       } else {
+        // Handle rate limiting response
+        let errorMessage = result.error || 'Unable to claim tokens. Please try again later.';
+        if (result.hours_remaining !== undefined) {
+          const hours = Math.floor(result.hours_remaining);
+          const minutes = Math.round((result.hours_remaining - hours) * 60);
+          errorMessage = `You can claim again in ${hours}h ${minutes}m`;
+        }
+
         toast({
           title: 'Claim Failed',
-          description: result.error || 'Unable to claim tokens. Please try again later.',
+          description: errorMessage,
           variant: 'destructive',
         });
       }
