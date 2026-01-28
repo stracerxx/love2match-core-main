@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
   Heart, Loader2, Edit2, Save, LogOut, Share2,
-  Camera, Video, Gift, Crown, Star, Users,
+  Camera, Video, Gift, Crown, Star, Users, X,
   MapPin, Calendar, Settings, Wallet, Bell,
   Shield, Zap, TrendingUp, Award, Target
 } from 'lucide-react';
@@ -21,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { UserProfile } from '@/lib/supabase';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { getMembershipBadge, getMembershipTier } from '@/lib/membership';
+import { uploadUserPhoto, deleteUserPhoto } from '@/lib/storage';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -70,6 +71,7 @@ const Profile = () => {
     privacy_show_online_status: true,
     privacy_allow_messaging: true,
     privacy_show_location: false,
+    photos: [] as string[],
   });
 
   useEffect(() => {
@@ -80,16 +82,16 @@ const Profile = () => {
 
   const loadProfile = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     const { profile: data, error } = await getUserProfile(user.id);
-    
+
     if (error) {
       // Profile doesn't exist, that's okay - we'll just create an empty one
       // This can happen if they logged in with an existing account
       const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'User';
       const fullName = user.user_metadata?.full_name || displayName;
-      
+
       setFormData({
         display_name: displayName,
         full_name: fullName,
@@ -128,8 +130,9 @@ const Profile = () => {
         privacy_show_online_status: true,
         privacy_allow_messaging: true,
         privacy_show_location: false,
+        photos: [],
       });
-      
+
       // Create a minimal profile object for display
       setProfile({
         id: user.id,
@@ -198,18 +201,19 @@ const Profile = () => {
         privacy_show_online_status: (data.privacy_settings as any)?.show_online_status || true,
         privacy_allow_messaging: (data.privacy_settings as any)?.allow_messaging || true,
         privacy_show_location: (data.privacy_settings as any)?.show_location || false,
+        photos: data.photos || [],
       });
     }
-    
+
     setLoading(false);
   };
 
   const handleSave = async () => {
     if (!user) return;
-    
+
     setSaving(true);
     const { profile: updated, error } = await updateUserProfile(user.id, formData);
-    
+
     if (error) {
       toast({
         title: 'Error updating profile',
@@ -233,6 +237,65 @@ const Profile = () => {
     navigate('/auth');
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setSaving(true);
+    const { data, error } = await uploadUserPhoto(user.id, file);
+
+    if (error) {
+      toast({
+        title: 'Upload failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else if (data?.publicUrl) {
+      const updatedPhotos = [...(formData.photos || []), data.publicUrl];
+      setFormData({ ...formData, photos: updatedPhotos });
+
+      // Update DB immediately for photos
+      const { error: updateError } = await updateUserProfile(user.id, { photos: updatedPhotos });
+      if (updateError) {
+        toast({
+          title: 'Error updating profile',
+          description: updateError.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Photo uploaded',
+          description: 'Your profile photo has been updated.',
+        });
+      }
+    }
+    setSaving(false);
+  };
+
+  const handlePhotoDelete = async (photoUrl: string) => {
+    if (!user) return;
+
+    setSaving(true);
+    const updatedPhotos = formData.photos.filter(p => p !== photoUrl);
+    setFormData({ ...formData, photos: updatedPhotos });
+
+    const { error: updateError } = await updateUserProfile(user.id, { photos: updatedPhotos });
+    if (updateError) {
+      toast({
+        title: 'Error updating profile',
+        description: updateError.message,
+        variant: 'destructive',
+      });
+    } else {
+      await deleteUserPhoto(photoUrl);
+      toast({
+        title: 'Photo deleted',
+        description: 'The photo has been removed from your profile.',
+      });
+    }
+    setSaving(false);
+  };
+
   const handleUpdateLocation = async () => {
     if (!geoLocation || !user) return;
 
@@ -247,7 +310,7 @@ const Profile = () => {
       location_lng: geoLocation.longitude,
     });
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('users')
       .update({
         demographics: {
@@ -299,10 +362,14 @@ const Profile = () => {
       <div className="gradient-hero h-48 md:h-64 relative">
         <div className="absolute inset-0 flex items-end justify-between p-4 md:p-8">
           <div className="flex items-end gap-4">
-            <div className="flex h-24 w-24 md:h-32 md:w-32 items-center justify-center rounded-full bg-card border-4 border-primary text-white shadow-lg">
-              <span className="text-3xl md:text-4xl font-bold text-primary">
-                {profile.display_name?.[0]?.toUpperCase() || '?'}
-              </span>
+            <div className="flex h-24 w-24 md:h-32 md:w-32 items-center justify-center rounded-full bg-card border-4 border-primary text-white shadow-lg overflow-hidden">
+              {formData.photos?.[0] ? (
+                <img src={formData.photos[0]} alt={formData.display_name} className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-3xl md:text-4xl font-bold text-primary">
+                  {profile.display_name?.[0]?.toUpperCase() || '?'}
+                </span>
+              )}
             </div>
             <div className="mb-2">
               <h1 className="text-xl md:text-2xl font-bold text-white">{profile.display_name}</h1>
@@ -312,17 +379,17 @@ const Profile = () => {
           <div className="flex gap-2">
             {!editing && (
               <>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setEditing(true)}
                   className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
                   <Edit2 className="mr-2 h-4 w-4" />
                   Edit
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="icon"
                   className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
@@ -365,6 +432,35 @@ const Profile = () => {
             </CardHeader>
 
             <CardContent className="space-y-6 pt-6">
+              {/* Photo Management Section */}
+              <div className="space-y-4">
+                <Label className="text-foreground">Profile Photos</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {formData.photos?.map((photo, index) => (
+                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden group">
+                      <img src={photo} alt={`Profile ${index}`} className="h-full w-full object-cover" />
+                      {editing && (
+                        <button
+                          onClick={() => handlePhotoDelete(photo)}
+                          className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {editing && (formData.photos?.length || 0) < 6 && (
+                    <label className="flex items-center justify-center aspect-square rounded-lg border-2 border-dashed border-primary/30 hover:border-primary transition-colors cursor-pointer bg-primary/5">
+                      <div className="text-center">
+                        <Camera className="h-6 w-6 mx-auto text-primary/50" />
+                        <span className="text-[10px] mt-1 block text-primary/50 font-medium">Add Photo</span>
+                      </div>
+                      <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={saving} />
+                    </label>
+                  )}
+                </div>
+              </div>
+
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-foreground">Email</Label>
