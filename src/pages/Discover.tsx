@@ -17,7 +17,7 @@ const Discover = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [profiles, setProfiles] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -62,12 +62,12 @@ const Discover = () => {
     fetchUserProfile();
   }, [user, authLoading]);
 
-  const handleLike = async () => {
+  const handleLike = async (profile?: any) => {
     if (!user) return;
-    const target = profiles[currentIndex];
+    const target = profile || profiles[currentIndex];
     if (!target) return;
 
-    nextProfile();
+    if (!profile) nextProfile();
 
     const { error } = await upsertLike(user.id, target.id, "like");
     if (error) {
@@ -81,16 +81,16 @@ const Discover = () => {
 
     toast({
       title: '❤️ Liked!',
-      description: "If they like you back, it's a match!",
+      description: `You liked ${target.display_name}!`,
     });
   };
 
-  const handlePass = async () => {
+  const handlePass = async (profile?: any) => {
     if (!user) return;
-    const target = profiles[currentIndex];
+    const target = profile || profiles[currentIndex];
     if (!target) return;
 
-    nextProfile();
+    if (!profile) nextProfile();
 
     const { error } = await upsertLike(user.id, target.id, "pass");
     if (error) {
@@ -222,41 +222,36 @@ const Discover = () => {
                       </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-2">
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-12 w-12 border-muted-foreground/30"
+                          onClick={() => handlePass(profile)}
+                        >
+                          <X className="h-6 w-6 text-muted-foreground" />
+                        </Button>
+                        <Button
+                          size="lg"
+                          className="flex-1 gradient-primary hover:shadow-lg text-white font-semibold h-12"
+                          onClick={() => handleLike(profile)}
+                        >
+                          <Heart className="mr-2 h-5 w-5" fill="currentColor" />
+                          Like
+                        </Button>
+                      </div>
+
                       <Button
-                        size="icon"
-                        variant="outline"
-                        className="h-12 w-12 border-muted-foreground/30"
-                        onClick={async () => {
-                          if (!user) return;
-                          const { error } = await upsertLike(user.id, profile.id, "pass");
-                          if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); }
-                        }}
-                      >
-                        <X className="h-6 w-6 text-muted-foreground" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="h-12 w-12 border-primary/30 text-primary hover:bg-primary/10"
+                        size="lg"
+                        variant="secondary"
+                        className="w-full flex items-center justify-center gap-2 font-bold h-12 border-primary/20 hover:bg-primary/5 transition-colors"
                         onClick={() => {
                           navigate("/messages", { state: { partnerId: profile.id } });
                         }}
                       >
-                        <MessageCircle className="h-6 w-6" />
-                      </Button>
-                      <Button
-                        size="lg"
-                        className="flex-1 gradient-primary hover:shadow-lg text-white font-semibold h-12"
-                        onClick={async () => {
-                          if (!user) return;
-                          const { error } = await upsertLike(user.id, profile.id, "like");
-                          if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
-                          toast({ title: '❤️ Liked!', description: "Check your matches!" });
-                        }}
-                      >
-                        <Heart className="mr-2 h-5 w-5" fill="currentColor" />
-                        Like
+                        <MessageCircle className="h-5 w-5 text-primary" />
+                        Message Now
                       </Button>
                     </div>
 

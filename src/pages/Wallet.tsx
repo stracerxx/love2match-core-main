@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { AlertCircle, Copy, CheckCircle, ArrowRightLeft, Loader2, Heart, Coins, Wallet as WalletIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConversionHistory } from '@/components/wallet/ConversionHistory';
+import { TokenFaucet } from '@/components/TokenFaucet';
 
 const Wallet = () => {
   const { user } = useAuth();
@@ -174,6 +175,9 @@ const Wallet = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Daily Token Faucet */}
+        <TokenFaucet />
 
         <Card className="shadow-card">
           <CardHeader>

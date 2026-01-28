@@ -1,12 +1,68 @@
 import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { useNavigate } from "react-router-dom";
 import { Icon, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { UserProfile } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, X, MapPin } from 'lucide-react';
+import { Heart, X, MapPin, MessageCircle } from 'lucide-react';
 import { calculateDistance } from '@/hooks/useGeolocation';
+
+// City name to coordinates mapping for common US cities
+const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
+  'las vegas': { lat: 36.1699, lng: -115.1398 },
+  'los angeles': { lat: 34.0522, lng: -118.2437 },
+  'new york': { lat: 40.7128, lng: -74.0060 },
+  'chicago': { lat: 41.8781, lng: -87.6298 },
+  'houston': { lat: 29.7604, lng: -95.3698 },
+  'phoenix': { lat: 33.4484, lng: -112.0740 },
+  'philadelphia': { lat: 39.9526, lng: -75.1652 },
+  'san antonio': { lat: 29.4241, lng: -98.4936 },
+  'san diego': { lat: 32.7157, lng: -117.1611 },
+  'dallas': { lat: 32.7767, lng: -96.7970 },
+  'san jose': { lat: 37.3382, lng: -121.8863 },
+  'austin': { lat: 30.2672, lng: -97.7431 },
+  'jacksonville': { lat: 30.3322, lng: -81.6557 },
+  'fort worth': { lat: 32.7555, lng: -97.3308 },
+  'columbus': { lat: 39.9612, lng: -82.9988 },
+  'charlotte': { lat: 35.2271, lng: -80.8431 },
+  'san francisco': { lat: 37.7749, lng: -122.4194 },
+  'indianapolis': { lat: 39.7684, lng: -86.1581 },
+  'seattle': { lat: 47.6062, lng: -122.3321 },
+  'denver': { lat: 39.7392, lng: -104.9903 },
+  'washington': { lat: 38.9072, lng: -77.0369 },
+  'boston': { lat: 42.3601, lng: -71.0589 },
+  'nashville': { lat: 36.1627, lng: -86.7816 },
+  'portland': { lat: 45.5152, lng: -122.6784 },
+  'miami': { lat: 25.7617, lng: -80.1918 },
+  'atlanta': { lat: 33.7490, lng: -84.3880 },
+  'grand junction': { lat: 39.0639, lng: -108.5506 },
+};
+
+// Parse city name and get coordinates
+const getCityCoordinates = (cityString: string | undefined): { lat: number; lng: number } | null => {
+  if (!cityString) return null;
+
+  // Normalize the city name (lowercase, remove state abbreviations)
+  const normalized = cityString.toLowerCase()
+    .replace(/,?\s*(ca|tx|ny|il|az|wa|or|fl|ga|co|nv|ma|tn|pa|oh|nc|mi|nj|va|md|mn|wi|mo|in|ky|sc|al|la|ok|ct|ia|ms|ar|ks|ut|nm|ne|wv|id|hi|nh|me|mt|ri|de|sd|nd|ak|vt|wy|dc)$/i, '')
+    .trim();
+
+  // Check for exact match
+  if (CITY_COORDINATES[normalized]) {
+    return CITY_COORDINATES[normalized];
+  }
+
+  // Check for partial match
+  for (const [city, coords] of Object.entries(CITY_COORDINATES)) {
+    if (normalized.includes(city) || city.includes(normalized)) {
+      return coords;
+    }
+  }
+
+  return null;
+};
 
 interface MapViewProps {
   profiles: UserProfile[];
@@ -15,17 +71,65 @@ interface MapViewProps {
   onPass: (profile: UserProfile) => void;
 }
 
+interface ProfileWithCoords extends UserProfile {
+  _mapLat: number;
+  _mapLng: number;
+}
+
 const MapView = ({ profiles, userLocation, onLike, onPass }: MapViewProps) => {
+  const navigate = useNavigate();
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
+  const [profilesWithCoords, setProfilesWithCoords] = useState<ProfileWithCoords[]>([]);
 
-  const defaultCenter: [number, number] = userLocation 
-    ? [userLocation.lat, userLocation.lng] 
-    : [37.7749, -122.4194];
+  const defaultCenter: [number, number] = userLocation
+    ? [userLocation.lat, userLocation.lng]
+    : [36.1699, -115.1398]; // Default to Las Vegas
 
-  const profilesWithLocation = profiles.filter(p => {
-    const demo = p.demographics as any;
-    return demo?.location_lat && demo?.location_lng;
-  });
+  // Process profiles to extract/geocode locations
+  useEffect(() => {
+    const processed: ProfileWithCoords[] = [];
+
+    for (const profile of profiles) {
+      const demo = profile.demographics as any;
+      let lat: number | null = null;
+      let lng: number | null = null;
+
+      // Priority 1: Check for explicit lat/lng in demographics
+      if (demo?.location_lat && demo?.location_lng) {
+        lat = Number(demo.location_lat);
+        lng = Number(demo.location_lng);
+      }
+
+      // Priority 2: Check for current_latitude/current_longitude (from CSV structure)
+      if (!lat && (profile as any).current_latitude && (profile as any).current_longitude) {
+        lat = Number((profile as any).current_latitude);
+        lng = Number((profile as any).current_longitude);
+      }
+
+      // Priority 3: Try to geocode from city name
+      if (!lat) {
+        // Try home_city first, then demographics.location
+        const cityName = (profile as any).home_city || demo?.location;
+        const coords = getCityCoordinates(cityName);
+        if (coords) {
+          // Add small random offset to prevent markers from stacking
+          lat = coords.lat + (Math.random() - 0.5) * 0.05;
+          lng = coords.lng + (Math.random() - 0.5) * 0.05;
+        }
+      }
+
+      // Only add if we have valid coordinates
+      if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+        processed.push({
+          ...profile,
+          _mapLat: lat,
+          _mapLng: lng,
+        });
+      }
+    }
+
+    setProfilesWithCoords(processed);
+  }, [profiles]);
 
   const createCustomIcon = (photoUrl?: string) => {
     if (photoUrl) {
@@ -79,11 +183,10 @@ const MapView = ({ profiles, userLocation, onLike, onPass }: MapViewProps) => {
           </Marker>
         )}
 
-        {profilesWithLocation.map((profile) => {
-          const demo = profile.demographics as any;
-          const lat = Number(demo.location_lat);
-          const lng = Number(demo.location_lng);
-          const distance = userLocation 
+        {profilesWithCoords.map((profile) => {
+          const lat = profile._mapLat;
+          const lng = profile._mapLng;
+          const distance = userLocation
             ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
             : null;
 
@@ -121,10 +224,10 @@ const MapView = ({ profiles, userLocation, onLike, onPass }: MapViewProps) => {
                 )}
                 <div className="flex-1">
                   <h3 className="font-bold text-lg">{selectedProfile.display_name}</h3>
-                  {selectedProfile.demographics?.location && (
+                  {((selectedProfile as any).home_city || selectedProfile.demographics?.location) && (
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <MapPin className="h-3 w-3" />
-                      <span>{String(selectedProfile.demographics.location)}</span>
+                      <span>{String((selectedProfile as any).home_city || selectedProfile.demographics?.location)}</span>
                     </div>
                   )}
                   {selectedProfile.bio && (
@@ -155,6 +258,17 @@ const MapView = ({ profiles, userLocation, onLike, onPass }: MapViewProps) => {
                   Like
                 </Button>
               </div>
+
+              <Button
+                variant="secondary"
+                className="w-full mt-2 flex items-center justify-center gap-2 font-bold h-10 border-primary/20 hover:bg-primary/5 transition-colors"
+                onClick={() => {
+                  navigate("/messages", { state: { partnerId: selectedProfile.id } });
+                }}
+              >
+                <MessageCircle className="h-4 w-4 text-primary" />
+                Message Now
+              </Button>
             </CardContent>
           </Card>
         </div>
