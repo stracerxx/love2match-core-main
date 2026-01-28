@@ -264,7 +264,15 @@ const Messages = () => {
                     size="sm"
                     variant="outline"
                     className="border-primary/40 text-primary hover:bg-primary/10"
-                    onClick={() => navigate(`/video-call?matchId=${selectedThread?.partner_id}&callType=audio`)}
+                    onClick={() => navigate('/video-call', {
+                      state: {
+                        matchId: selectedThread?.partner_id,
+                        receiverId: selectedThread?.partner_id,
+                        receiverEmail: selectedThread?.partner_email || '',
+                        receiverName: selectedThread?.partner_display_name || selectedThread?.partner_email,
+                        callType: 'audio'
+                      }
+                    })}
                     title="Start audio call"
                   >
                     <Phone className="h-4 w-4" />
@@ -273,7 +281,15 @@ const Messages = () => {
                     size="sm"
                     variant="outline"
                     className="border-primary/40 text-primary hover:bg-primary/10"
-                    onClick={() => navigate(`/video-call?matchId=${selectedThread?.partner_id}&callType=video`)}
+                    onClick={() => navigate('/video-call', {
+                      state: {
+                        matchId: selectedThread?.partner_id,
+                        receiverId: selectedThread?.partner_id,
+                        receiverEmail: selectedThread?.partner_email || '',
+                        receiverName: selectedThread?.partner_display_name || selectedThread?.partner_email,
+                        callType: 'video'
+                      }
+                    })}
                     title="Start video call"
                   >
                     <Video className="h-4 w-4" />
