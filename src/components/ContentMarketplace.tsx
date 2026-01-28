@@ -49,61 +49,16 @@ export const ContentMarketplace: React.FC<ContentMarketplaceProps> = ({
   const fetchContent = async () => {
     try {
       setLoading(true);
-      // Mock data - replace with actual API call
-      const mockContent: Content[] = [
-        {
-          id: '1',
-          creator_email: 'creator1@example.com',
-          creator_display_name: 'Emma Creative',
-          title: 'Sunset Photography Collection',
-          description: 'Beautiful sunset photos from around the world',
-          content_type: 'image',
-          thumbnail_url: '/content/sunset-thumb.jpg',
-          content_url: '/content/sunset-full.jpg',
-          price_love: 25,
-          status: 'approved',
-          total_sales: 42,
-          total_earnings: 1050,
-          is_nsfw: false
-        },
-        {
-          id: '2',
-          creator_email: 'creator2@example.com',
-          creator_display_name: 'Alex Visuals',
-          title: 'Urban Exploration Video',
-          description: 'Exploring abandoned places in 4K video',
-          content_type: 'video',
-          thumbnail_url: '/content/urban-thumb.jpg',
-          content_url: '/content/urban-video.mp4',
-          price_love: 50,
-          status: 'approved',
-          total_sales: 18,
-          total_earnings: 900,
-          is_nsfw: false
-        },
-        {
-          id: '3',
-          creator_email: 'creator3@example.com',
-          creator_display_name: 'Sophia Art',
-          title: 'Digital Art Portfolio',
-          description: 'Collection of digital paintings and illustrations',
-          content_type: 'image',
-          thumbnail_url: '/content/art-thumb.jpg',
-          content_url: '/content/art-collection.zip',
-          price_love: 75,
-          status: 'approved',
-          total_sales: 31,
-          total_earnings: 2325,
-          is_nsfw: false
-        }
-      ];
-
-      // Filter by creator if showCreatorContent is true
-      const filteredContent = showCreatorContent && user?.email
-        ? mockContent.filter(item => item.creator_email === user.email)
-        : mockContent.filter(item => item.status === 'approved');
-
-      setContent(filteredContent);
+      // TODO: Replace with actual API call to fetch content from database
+      // For now, show empty state - content marketplace is not yet implemented
+      // Example API call:
+      // const { data, error } = await supabase
+      //   .from('premium_content')
+      //   .select('*')
+      //   .eq('status', 'approved');
+      
+      // No mock data - show empty state until real content is available
+      setContent([]);
     } catch (error) {
       toast({
         title: 'Error',

@@ -47,73 +47,18 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      // Mock data - replace with actual API call
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          user_email: user?.email || '',
-          type: 'like',
-          title: 'New Like!',
-          body: 'Someone liked your profile',
-          related_user_email: 'user2@example.com',
-          is_read: false,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          user_email: user?.email || '',
-          type: 'message',
-          title: 'New Message',
-          body: 'You have a new message from Alex',
-          related_user_email: 'alex@example.com',
-          action_url: '/messages',
-          is_read: false,
-          created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString()
-        },
-        {
-          id: '3',
-          user_email: user?.email || '',
-          type: 'match',
-          title: 'It\'s a Match!',
-          body: 'You matched with Sophia',
-          related_user_email: 'sophia@example.com',
-          action_url: '/matches',
-          is_read: true,
-          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '4',
-          user_email: user?.email || '',
-          type: 'gift',
-          title: 'Gift Received!',
-          body: 'You received a virtual rose',
-          related_user_email: 'user3@example.com',
-          is_read: false,
-          created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '5',
-          user_email: user?.email || '',
-          type: 'event_reminder',
-          title: 'Event Reminder',
-          body: 'Your event "Beach Party" starts in 2 hours',
-          related_entity_type: 'Event',
-          related_entity_id: 'event123',
-          action_url: '/events/event123',
-          is_read: false,
-          created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString()
-        },
-        {
-          id: '6',
-          user_email: user?.email || '',
-          type: 'token',
-          title: 'Tokens Added',
-          body: 'You earned 50 LOVE tokens for completing your profile',
-          is_read: true,
-          created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-        }
-      ];
-      setNotifications(mockNotifications);
+      // TODO: Replace with actual API call to fetch notifications from database
+      // For now, show empty state - notifications will be populated by real events
+      // Example API call:
+      // const { data, error } = await supabase
+      //   .from('notifications')
+      //   .select('*')
+      //   .eq('user_email', user?.email)
+      //   .order('created_at', { ascending: false })
+      //   .limit(maxNotifications);
+      
+      // No mock data - show empty state until real notifications are available
+      setNotifications([]);
     } catch (error) {
       toast({
         title: 'Error',
