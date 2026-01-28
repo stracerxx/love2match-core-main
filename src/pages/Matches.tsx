@@ -42,9 +42,12 @@ const Matches = () => {
   };
 
   const startVideoCall = (match: MutualMatch) => {
+    // match.id IS the user's ID (from get_mutual_matches function)
+    // We use it for both channel naming and as the receiver ID
     navigate("/video-call", {
       state: {
-        matchId: match.id,
+        matchId: match.id,      // Used for channel naming
+        receiverId: match.id,   // The other user's ID (same as matchId here)
         receiverEmail: match.email,
         receiverName: match.display_name,
         callType: 'video'
@@ -53,9 +56,11 @@ const Matches = () => {
   };
 
   const startAudioCall = (match: MutualMatch) => {
+    // match.id IS the user's ID (from get_mutual_matches function)
     navigate("/video-call", {
       state: {
-        matchId: match.id,
+        matchId: match.id,      // Used for channel naming
+        receiverId: match.id,   // The other user's ID (same as matchId here)
         receiverEmail: match.email,
         receiverName: match.display_name,
         callType: 'audio'

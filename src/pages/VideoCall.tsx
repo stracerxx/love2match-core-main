@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 
 interface VideoCallLocationState {
   matchId: string;
+  receiverId: string;        // The other user's ID
   receiverEmail: string;
   receiverName?: string;
   callType: 'video' | 'audio';
@@ -61,6 +62,7 @@ const VideoCall = () => {
       <div className="max-w-4xl mx-auto">
         <VideoCallInterface
           matchId={state.matchId}
+          receiverId={state.receiverId}
           receiverEmail={state.receiverEmail}
           receiverName={state.receiverName}
           onCallEnd={handleCallEnd}
