@@ -226,7 +226,6 @@ const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'lompoc': { lat: 34.6392, lng: -120.4579 },
   'newark': { lat: 37.5297, lng: -122.0402 },
   'palm springs': { lat: 33.8303, lng: -116.5453 },
-  'fairfield': { lat: 38.2494, lng: -122.0400 },
 };
 
 // Parse city name and get coordinates
@@ -301,9 +300,15 @@ const MapView = ({ profiles, userLocation, onLike, onPass }: MapViewProps) => {
         const cityName = (profile as any).home_city || demo?.location;
         const coords = getCityCoordinates(cityName);
         if (coords) {
-          // Add small random offset to prevent markers from stacking
-          lat = coords.lat + (Math.random() - 0.5) * 0.05;
-          lng = coords.lng + (Math.random() - 0.5) * 0.05;
+          // Use deterministic offset based on user ID to prevent markers from stacking
+          // while keeping the same user in the same position consistently
+          // The offset is very small (0.002 degrees = ~0.14 miles / ~220 meters)
+          // This keeps users within their city while preventing exact overlap
+          const idHash = String(profile.id).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const offsetLat = ((idHash % 100) / 100 - 0.5) * 0.004; // Max ~0.28 miles offset
+          const offsetLng = (((idHash * 7) % 100) / 100 - 0.5) * 0.004;
+          lat = coords.lat + offsetLat;
+          lng = coords.lng + offsetLng;
         }
       }
 
