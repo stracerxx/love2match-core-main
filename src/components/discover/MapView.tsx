@@ -6,10 +6,12 @@ import 'leaflet/dist/leaflet.css';
 import type { UserProfile } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, X, MapPin, MessageCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Heart, X, MapPin, MessageCircle, AlertCircle } from 'lucide-react';
 import { calculateDistance } from '@/hooks/useGeolocation';
 
 // City name to coordinates mapping for common US cities
+// This is used as a fallback when users have a city name but no explicit coordinates
 const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'las vegas': { lat: 36.1699, lng: -115.1398 },
   'los angeles': { lat: 34.0522, lng: -118.2437 },
@@ -38,6 +40,193 @@ const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'miami': { lat: 25.7617, lng: -80.1918 },
   'atlanta': { lat: 33.7490, lng: -84.3880 },
   'grand junction': { lat: 39.0639, lng: -108.5506 },
+  'henderson': { lat: 36.0395, lng: -114.9817 },
+  'reno': { lat: 39.5296, lng: -119.8138 },
+  'sacramento': { lat: 38.5816, lng: -121.4944 },
+  'fresno': { lat: 36.7378, lng: -119.7871 },
+  'long beach': { lat: 33.7701, lng: -118.1937 },
+  'oakland': { lat: 37.8044, lng: -122.2712 },
+  'bakersfield': { lat: 35.3733, lng: -119.0187 },
+  'anaheim': { lat: 33.8366, lng: -117.9143 },
+  'santa ana': { lat: 33.7455, lng: -117.8677 },
+  'riverside': { lat: 33.9533, lng: -117.3962 },
+  'stockton': { lat: 37.9577, lng: -121.2908 },
+  'irvine': { lat: 33.6846, lng: -117.8265 },
+  'chula vista': { lat: 32.6401, lng: -117.0842 },
+  'fremont': { lat: 37.5485, lng: -121.9886 },
+  'san bernardino': { lat: 34.1083, lng: -117.2898 },
+  'modesto': { lat: 37.6391, lng: -120.9969 },
+  'fontana': { lat: 34.0922, lng: -117.4350 },
+  'moreno valley': { lat: 33.9425, lng: -117.2297 },
+  'glendale': { lat: 34.1425, lng: -118.2551 },
+  'huntington beach': { lat: 33.6595, lng: -117.9988 },
+  'santa clarita': { lat: 34.3917, lng: -118.5426 },
+  'garden grove': { lat: 33.7739, lng: -117.9414 },
+  'oceanside': { lat: 33.1959, lng: -117.3795 },
+  'rancho cucamonga': { lat: 34.1064, lng: -117.5931 },
+  'ontario': { lat: 34.0633, lng: -117.6509 },
+  'santa rosa': { lat: 38.4404, lng: -122.7141 },
+  'elk grove': { lat: 38.4088, lng: -121.3716 },
+  'corona': { lat: 33.8753, lng: -117.5664 },
+  'lancaster': { lat: 34.6868, lng: -118.1542 },
+  'palmdale': { lat: 34.5794, lng: -118.1165 },
+  'salinas': { lat: 36.6777, lng: -121.6555 },
+  'pomona': { lat: 34.0551, lng: -117.7500 },
+  'hayward': { lat: 37.6688, lng: -122.0808 },
+  'escondido': { lat: 33.1192, lng: -117.0864 },
+  'sunnyvale': { lat: 37.3688, lng: -122.0363 },
+  'torrance': { lat: 33.8358, lng: -118.3406 },
+  'pasadena': { lat: 34.1478, lng: -118.1445 },
+  'orange': { lat: 33.7879, lng: -117.8531 },
+  'fullerton': { lat: 33.8703, lng: -117.9242 },
+  'thousand oaks': { lat: 34.1706, lng: -118.8376 },
+  'roseville': { lat: 38.7521, lng: -121.2880 },
+  'concord': { lat: 37.9780, lng: -122.0311 },
+  'simi valley': { lat: 34.2694, lng: -118.7815 },
+  'santa clara': { lat: 37.3541, lng: -121.9552 },
+  'victorville': { lat: 34.5362, lng: -117.2928 },
+  'vallejo': { lat: 38.1041, lng: -122.2566 },
+  'berkeley': { lat: 37.8716, lng: -122.2727 },
+  'el monte': { lat: 34.0686, lng: -118.0276 },
+  'downey': { lat: 33.9401, lng: -118.1332 },
+  'costa mesa': { lat: 33.6412, lng: -117.9187 },
+  'inglewood': { lat: 33.9617, lng: -118.3531 },
+  'carlsbad': { lat: 33.1581, lng: -117.3506 },
+  'san buenaventura': { lat: 34.2746, lng: -119.2290 },
+  'ventura': { lat: 34.2746, lng: -119.2290 },
+  'fairfield': { lat: 38.2494, lng: -122.0400 },
+  'west covina': { lat: 34.0686, lng: -117.9390 },
+  'murrieta': { lat: 33.5539, lng: -117.2139 },
+  'richmond': { lat: 37.9358, lng: -122.3478 },
+  'norwalk': { lat: 33.9022, lng: -118.0817 },
+  'antioch': { lat: 38.0049, lng: -121.8058 },
+  'temecula': { lat: 33.4936, lng: -117.1484 },
+  'burbank': { lat: 34.1808, lng: -118.3090 },
+  'daly city': { lat: 37.6879, lng: -122.4702 },
+  'el cajon': { lat: 32.7948, lng: -116.9625 },
+  'san mateo': { lat: 37.5630, lng: -122.3255 },
+  'clovis': { lat: 36.8252, lng: -119.7029 },
+  'compton': { lat: 33.8958, lng: -118.2201 },
+  'jurupa valley': { lat: 33.9972, lng: -117.4855 },
+  'vista': { lat: 33.2000, lng: -117.2425 },
+  'south gate': { lat: 33.9547, lng: -118.2120 },
+  'mission viejo': { lat: 33.6000, lng: -117.6720 },
+  'vacaville': { lat: 38.3566, lng: -121.9877 },
+  'carson': { lat: 33.8317, lng: -118.2820 },
+  'hesperia': { lat: 34.4264, lng: -117.3009 },
+  'santa maria': { lat: 34.9530, lng: -120.4357 },
+  'redding': { lat: 40.5865, lng: -122.3917 },
+  'westminster': { lat: 33.7513, lng: -117.9940 },
+  'santa monica': { lat: 34.0195, lng: -118.4912 },
+  'chico': { lat: 39.7285, lng: -121.8375 },
+  'newport beach': { lat: 33.6189, lng: -117.9289 },
+  'san leandro': { lat: 37.7249, lng: -122.1561 },
+  'san marcos': { lat: 33.1434, lng: -117.1661 },
+  'whittier': { lat: 33.9792, lng: -118.0328 },
+  'hawthorne': { lat: 33.9164, lng: -118.3526 },
+  'citrus heights': { lat: 38.7071, lng: -121.2810 },
+  'alhambra': { lat: 34.0953, lng: -118.1270 },
+  'tracy': { lat: 37.7397, lng: -121.4252 },
+  'livermore': { lat: 37.6819, lng: -121.7680 },
+  'buena park': { lat: 33.8675, lng: -117.9981 },
+  'menifee': { lat: 33.6971, lng: -117.1850 },
+  'hemet': { lat: 33.7476, lng: -116.9719 },
+  'lakewood': { lat: 33.8536, lng: -118.1340 },
+  'merced': { lat: 37.3022, lng: -120.4830 },
+  'chino': { lat: 34.0122, lng: -117.6889 },
+  'indio': { lat: 33.7206, lng: -116.2156 },
+  'redwood city': { lat: 37.4852, lng: -122.2364 },
+  'lake forest': { lat: 33.6469, lng: -117.6891 },
+  'napa': { lat: 38.2975, lng: -122.2869 },
+  'tustin': { lat: 33.7458, lng: -117.8262 },
+  'bellflower': { lat: 33.8817, lng: -118.1170 },
+  'mountain view': { lat: 37.3861, lng: -122.0839 },
+  'chino hills': { lat: 33.9898, lng: -117.7326 },
+  'baldwin park': { lat: 34.0853, lng: -117.9609 },
+  'alameda': { lat: 37.7652, lng: -122.2416 },
+  'upland': { lat: 34.0975, lng: -117.6484 },
+  'san ramon': { lat: 37.7799, lng: -121.9780 },
+  'folsom': { lat: 38.6780, lng: -121.1761 },
+  'pleasanton': { lat: 37.6624, lng: -121.8747 },
+  'lynwood': { lat: 33.9303, lng: -118.2115 },
+  'union city': { lat: 37.5934, lng: -122.0439 },
+  'apple valley': { lat: 34.5008, lng: -117.1859 },
+  'redlands': { lat: 34.0556, lng: -117.1825 },
+  'turlock': { lat: 37.4947, lng: -120.8466 },
+  'perris': { lat: 33.7825, lng: -117.2286 },
+  'manteca': { lat: 37.7974, lng: -121.2161 },
+  'milpitas': { lat: 37.4323, lng: -121.8996 },
+  'redondo beach': { lat: 33.8492, lng: -118.3884 },
+  'davis': { lat: 38.5449, lng: -121.7405 },
+  'camarillo': { lat: 34.2164, lng: -119.0376 },
+  'yuba city': { lat: 39.1404, lng: -121.6169 },
+  'rancho cordova': { lat: 38.5891, lng: -121.3028 },
+  'palo alto': { lat: 37.4419, lng: -122.1430 },
+  'yorba linda': { lat: 33.8886, lng: -117.8131 },
+  'walnut creek': { lat: 37.9101, lng: -122.0652 },
+  'south san francisco': { lat: 37.6547, lng: -122.4077 },
+  'san clemente': { lat: 33.4270, lng: -117.6120 },
+  'pittsburg': { lat: 38.0280, lng: -121.8847 },
+  'laguna niguel': { lat: 33.5225, lng: -117.7076 },
+  'pico rivera': { lat: 33.9831, lng: -118.0967 },
+  'montebello': { lat: 34.0165, lng: -118.1138 },
+  'lodi': { lat: 38.1302, lng: -121.2724 },
+  'madera': { lat: 36.9613, lng: -120.0607 },
+  'santa cruz': { lat: 36.9741, lng: -122.0308 },
+  'la habra': { lat: 33.9319, lng: -117.9462 },
+  'encinitas': { lat: 33.0370, lng: -117.2920 },
+  'monterey park': { lat: 34.0625, lng: -118.1228 },
+  'tulare': { lat: 36.2077, lng: -119.3473 },
+  'cupertino': { lat: 37.3230, lng: -122.0322 },
+  'gardena': { lat: 33.8883, lng: -118.3090 },
+  'national city': { lat: 32.6781, lng: -117.0992 },
+  'rocklin': { lat: 38.7907, lng: -121.2358 },
+  'petaluma': { lat: 38.2324, lng: -122.6367 },
+  'huntington park': { lat: 33.9817, lng: -118.2251 },
+  'san rafael': { lat: 37.9735, lng: -122.5311 },
+  'la mesa': { lat: 32.7678, lng: -117.0231 },
+  'arcadia': { lat: 34.1397, lng: -118.0353 },
+  'fountain valley': { lat: 33.7092, lng: -117.9536 },
+  'diamond bar': { lat: 34.0286, lng: -117.8103 },
+  'woodland': { lat: 38.6785, lng: -121.7733 },
+  'santee': { lat: 32.8384, lng: -116.9739 },
+  'lake elsinore': { lat: 33.6681, lng: -117.3273 },
+  'porterville': { lat: 36.0652, lng: -119.0168 },
+  'paramount': { lat: 33.8894, lng: -118.1597 },
+  'eastvale': { lat: 33.9525, lng: -117.5848 },
+  'rosemead': { lat: 34.0806, lng: -118.0728 },
+  'hanford': { lat: 36.3274, lng: -119.6457 },
+  'highland': { lat: 34.1283, lng: -117.2086 },
+  'brentwood': { lat: 37.9317, lng: -121.6961 },
+  'novato': { lat: 38.1074, lng: -122.5697 },
+  'colton': { lat: 34.0739, lng: -117.3136 },
+  'cathedral city': { lat: 33.7797, lng: -116.4653 },
+  'yucaipa': { lat: 34.0336, lng: -117.0431 },
+  'watsonville': { lat: 36.9103, lng: -121.7569 },
+  'glendora': { lat: 34.1361, lng: -117.8653 },
+  'west sacramento': { lat: 38.5805, lng: -121.5302 },
+  'covina': { lat: 34.0900, lng: -117.8903 },
+  'san jacinto': { lat: 33.7839, lng: -116.9586 },
+  'palm desert': { lat: 33.7222, lng: -116.3744 },
+  'cerritos': { lat: 33.8583, lng: -118.0647 },
+  'aliso viejo': { lat: 33.5676, lng: -117.7256 },
+  'poway': { lat: 32.9628, lng: -117.0359 },
+  'la mirada': { lat: 33.9172, lng: -118.0120 },
+  'rancho santa margarita': { lat: 33.6406, lng: -117.6031 },
+  'cypress': { lat: 33.8170, lng: -118.0373 },
+  'dublin': { lat: 37.7022, lng: -121.9358 },
+  'ceres': { lat: 37.5949, lng: -120.9577 },
+  'san luis obispo': { lat: 35.2828, lng: -120.6596 },
+  'gilroy': { lat: 37.0058, lng: -121.5683 },
+  'coachella': { lat: 33.6803, lng: -116.1739 },
+  'bell gardens': { lat: 33.9653, lng: -118.1514 },
+  'la quinta': { lat: 33.6633, lng: -116.3100 },
+  'azusa': { lat: 34.1336, lng: -117.9076 },
+  'san bruno': { lat: 37.6305, lng: -122.4111 },
+  'lompoc': { lat: 34.6392, lng: -120.4579 },
+  'newark': { lat: 37.5297, lng: -122.0402 },
+  'palm springs': { lat: 33.8303, lng: -116.5453 },
+  'fairfield': { lat: 38.2494, lng: -122.0400 },
 };
 
 // Parse city name and get coordinates
@@ -160,11 +349,33 @@ const MapView = ({ profiles, userLocation, onLike, onPass }: MapViewProps) => {
     iconAnchor: [20, 20],
   });
 
+  const profilesWithoutLocation = profiles.length - profilesWithCoords.length;
+
   return (
     <div className="relative w-full h-full">
+      {/* Status indicator showing location data availability */}
+      <div className="absolute top-4 left-4 z-[1000] flex flex-col gap-2">
+        <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm shadow-md">
+          <MapPin className="h-3 w-3 mr-1" />
+          {profilesWithCoords.length} profiles on map
+        </Badge>
+        {profilesWithoutLocation > 0 && (
+          <Badge variant="outline" className="bg-background/90 backdrop-blur-sm shadow-md text-muted-foreground">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            {profilesWithoutLocation} without location
+          </Badge>
+        )}
+        {!userLocation && (
+          <Badge variant="outline" className="bg-yellow-100/90 backdrop-blur-sm shadow-md text-yellow-800 border-yellow-300">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Set your location in Profile
+          </Badge>
+        )}
+      </div>
+
       <MapContainer
         center={defaultCenter}
-        zoom={12}
+        zoom={userLocation ? 12 : 10}
         style={{ height: '100%', width: '100%' }}
         className="rounded-lg"
       >
@@ -209,6 +420,25 @@ const MapView = ({ profiles, userLocation, onLike, onPass }: MapViewProps) => {
           );
         })}
       </MapContainer>
+
+      {/* Empty state when no profiles have location data */}
+      {profilesWithCoords.length === 0 && profiles.length > 0 && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-[999] rounded-lg">
+          <Card className="max-w-sm mx-4">
+            <CardContent className="p-6 text-center">
+              <MapPin className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="font-semibold text-lg mb-2">No Location Data</h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                None of the {profiles.length} profiles have location data set.
+                Users need to update their location in their profile settings to appear on the map.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Tip: Go to Profile → Update Location to set your location
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {selectedProfile && (
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000] w-full max-w-sm px-4">
