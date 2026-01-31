@@ -514,6 +514,311 @@ const Profile = () => {
                     className={editing ? '' : 'bg-muted/50 border-border/50'}
                   />
                 </div>
+
+                {/* Location Section */}
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="text-foreground flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Location
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="location"
+                      value={formData.location}
+                      onChange={(e) =>
+                        setFormData({ ...formData, location: e.target.value })
+                      }
+                      disabled={!editing}
+                      placeholder="City, State"
+                      className={editing ? 'flex-1' : 'flex-1 bg-muted/50 border-border/50'}
+                    />
+                    {editing && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUpdateLocation}
+                        disabled={geoLoading || !geoLocation}
+                        className="whitespace-nowrap"
+                      >
+                        {geoLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <MapPin className="h-4 w-4 mr-1" />
+                            Use Current
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Basic Info Section */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="occupation" className="text-foreground">Occupation</Label>
+                    <Input
+                      id="occupation"
+                      value={formData.occupation}
+                      onChange={(e) =>
+                        setFormData({ ...formData, occupation: e.target.value })
+                      }
+                      disabled={!editing}
+                      placeholder="Your job title"
+                      className={editing ? '' : 'bg-muted/50 border-border/50'}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="education" className="text-foreground">Education</Label>
+                    <Input
+                      id="education"
+                      value={formData.education}
+                      onChange={(e) =>
+                        setFormData({ ...formData, education: e.target.value })
+                      }
+                      disabled={!editing}
+                      placeholder="Your education"
+                      className={editing ? '' : 'bg-muted/50 border-border/50'}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="height" className="text-foreground">Height</Label>
+                    <Input
+                      id="height"
+                      value={formData.height}
+                      onChange={(e) =>
+                        setFormData({ ...formData, height: e.target.value })
+                      }
+                      disabled={!editing}
+                      placeholder="e.g., 5'10&quot;"
+                      className={editing ? '' : 'bg-muted/50 border-border/50'}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="zodiac_sign" className="text-foreground">Zodiac Sign</Label>
+                    <Input
+                      id="zodiac_sign"
+                      value={formData.zodiac_sign}
+                      onChange={(e) =>
+                        setFormData({ ...formData, zodiac_sign: e.target.value })
+                      }
+                      disabled={!editing}
+                      placeholder="e.g., Aries"
+                      className={editing ? '' : 'bg-muted/50 border-border/50'}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="interests" className="text-foreground">Interests</Label>
+                  <Input
+                    id="interests"
+                    value={formData.interests}
+                    onChange={(e) =>
+                      setFormData({ ...formData, interests: e.target.value })
+                    }
+                    disabled={!editing}
+                    placeholder="Travel, Music, Cooking (comma separated)"
+                    className={editing ? '' : 'bg-muted/50 border-border/50'}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="languages" className="text-foreground">Languages</Label>
+                  <Input
+                    id="languages"
+                    value={formData.languages}
+                    onChange={(e) =>
+                      setFormData({ ...formData, languages: e.target.value })
+                    }
+                    disabled={!editing}
+                    placeholder="English, Spanish (comma separated)"
+                    className={editing ? '' : 'bg-muted/50 border-border/50'}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="relationship_goals" className="text-foreground">Relationship Goals</Label>
+                  <Input
+                    id="relationship_goals"
+                    value={formData.relationship_goals}
+                    onChange={(e) =>
+                      setFormData({ ...formData, relationship_goals: e.target.value })
+                    }
+                    disabled={!editing}
+                    placeholder="Looking for..."
+                    className={editing ? '' : 'bg-muted/50 border-border/50'}
+                  />
+                </div>
+
+                {/* Lifestyle Section */}
+                <div className="pt-4 border-t border-border/50">
+                  <h3 className="text-sm font-semibold text-foreground mb-4">Lifestyle</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="drinking_habits" className="text-foreground">Drinking</Label>
+                      <Input
+                        id="drinking_habits"
+                        value={formData.drinking_habits}
+                        onChange={(e) =>
+                          setFormData({ ...formData, drinking_habits: e.target.value })
+                        }
+                        disabled={!editing}
+                        placeholder="e.g., Socially"
+                        className={editing ? '' : 'bg-muted/50 border-border/50'}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="smoking_habits" className="text-foreground">Smoking</Label>
+                      <Input
+                        id="smoking_habits"
+                        value={formData.smoking_habits}
+                        onChange={(e) =>
+                          setFormData({ ...formData, smoking_habits: e.target.value })
+                        }
+                        disabled={!editing}
+                        placeholder="e.g., Never"
+                        className={editing ? '' : 'bg-muted/50 border-border/50'}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="exercise_habits" className="text-foreground">Exercise</Label>
+                      <Input
+                        id="exercise_habits"
+                        value={formData.exercise_habits}
+                        onChange={(e) =>
+                          setFormData({ ...formData, exercise_habits: e.target.value })
+                        }
+                        disabled={!editing}
+                        placeholder="e.g., Daily"
+                        className={editing ? '' : 'bg-muted/50 border-border/50'}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="wants_children" className="text-foreground">Want Children</Label>
+                      <Input
+                        id="wants_children"
+                        value={formData.wants_children}
+                        onChange={(e) =>
+                          setFormData({ ...formData, wants_children: e.target.value })
+                        }
+                        disabled={!editing}
+                        placeholder="e.g., Someday"
+                        className={editing ? '' : 'bg-muted/50 border-border/50'}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 mt-4">
+                    <Label htmlFor="has_pets" className="text-foreground">Has Pets</Label>
+                    <Switch
+                      id="has_pets"
+                      checked={formData.has_pets}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, has_pets: checked })
+                      }
+                      disabled={!editing}
+                    />
+                  </div>
+                </div>
+
+                {/* Personality Section */}
+                <div className="pt-4 border-t border-border/50">
+                  <h3 className="text-sm font-semibold text-foreground mb-4">Personality</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="personality_type" className="text-foreground">Personality Type</Label>
+                      <Input
+                        id="personality_type"
+                        value={formData.personality_type}
+                        onChange={(e) =>
+                          setFormData({ ...formData, personality_type: e.target.value })
+                        }
+                        disabled={!editing}
+                        placeholder="e.g., INFJ"
+                        className={editing ? '' : 'bg-muted/50 border-border/50'}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="love_language" className="text-foreground">Love Language</Label>
+                      <Input
+                        id="love_language"
+                        value={formData.love_language}
+                        onChange={(e) =>
+                          setFormData({ ...formData, love_language: e.target.value })
+                        }
+                        disabled={!editing}
+                        placeholder="e.g., Quality Time"
+                        className={editing ? '' : 'bg-muted/50 border-border/50'}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="ideal_date" className="text-foreground">Ideal Date</Label>
+                    <Textarea
+                      id="ideal_date"
+                      value={formData.ideal_date}
+                      onChange={(e) =>
+                        setFormData({ ...formData, ideal_date: e.target.value })
+                      }
+                      disabled={!editing}
+                      rows={2}
+                      placeholder="Describe your ideal date..."
+                      className={editing ? '' : 'bg-muted/50 border-border/50'}
+                    />
+                  </div>
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="dealbreakers" className="text-foreground">Dealbreakers</Label>
+                    <Input
+                      id="dealbreakers"
+                      value={formData.dealbreakers}
+                      onChange={(e) =>
+                        setFormData({ ...formData, dealbreakers: e.target.value })
+                      }
+                      disabled={!editing}
+                      placeholder="Things you can't compromise on"
+                      className={editing ? '' : 'bg-muted/50 border-border/50'}
+                    />
+                  </div>
+                </div>
+
+                {/* Beliefs Section */}
+                <div className="pt-4 border-t border-border/50">
+                  <h3 className="text-sm font-semibold text-foreground mb-4">Beliefs & Values</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="religion" className="text-foreground">Religion</Label>
+                      <Input
+                        id="religion"
+                        value={formData.religion}
+                        onChange={(e) =>
+                          setFormData({ ...formData, religion: e.target.value })
+                        }
+                        disabled={!editing}
+                        placeholder="Your faith"
+                        className={editing ? '' : 'bg-muted/50 border-border/50'}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="political_views" className="text-foreground">Political Views</Label>
+                      <Input
+                        id="political_views"
+                        value={formData.political_views}
+                        onChange={(e) =>
+                          setFormData({ ...formData, political_views: e.target.value })
+                        }
+                        disabled={!editing}
+                        placeholder="Your views"
+                        className={editing ? '' : 'bg-muted/50 border-border/50'}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-4">
