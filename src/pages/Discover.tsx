@@ -170,6 +170,7 @@ const Discover = () => {
               userLocation={userLocation}
               onLike={handleLike}
               onPass={handlePass}
+              radiusFilter={discoveryPrefs?.radius}
             />
           </div>
         </div>
