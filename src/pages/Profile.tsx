@@ -9,9 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
   Heart, Loader2, Edit2, Save, LogOut, Share2,
-  Camera, Video, Gift, Crown, Star, Users, X,
-  MapPin, Calendar, Settings, Wallet, Bell,
-  Shield, Zap, TrendingUp, Award, Target
+  Camera, X,
+  MapPin, Search
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { getUserProfile, updateUserProfile } from '@/lib/profiles';
@@ -23,6 +22,7 @@ import type { UserProfile } from '@/lib/supabase';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { getMembershipBadge, getMembershipTier } from '@/lib/membership';
 import { uploadUserPhoto, deleteUserPhoto } from '@/lib/storage';
+import { geocodeLocation } from '@/lib/geocoding';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -298,43 +298,112 @@ const Profile = () => {
   };
 
   const handleUpdateLocation = async () => {
-    if (!geoLocation || !user) return;
+    if (!user) return;
 
-    const locationString = geoLocation.city
-      ? `${geoLocation.city}, ${geoLocation.country}`
-      : `${geoLocation.latitude.toFixed(2)}, ${geoLocation.longitude.toFixed(2)}`;
+    // If we have geolocation data, use it
+    if (geoLocation) {
+      const locationString = geoLocation.city
+        ? `${geoLocation.city}, ${geoLocation.country}`
+        : `${geoLocation.latitude.toFixed(4)}, ${geoLocation.longitude.toFixed(4)}`;
 
-    setFormData({
-      ...formData,
-      location: locationString,
-      location_lat: geoLocation.latitude,
-      location_lng: geoLocation.longitude,
-    });
-
-    const { error } = await (supabase as any)
-      .from('users')
-      .update({
-        demographics: {
-          ...(profile?.demographics as any),
-          location: locationString,
-          location_lat: geoLocation.latitude,
-          location_lng: geoLocation.longitude,
-        }
-      })
-      .eq('id', user.id);
-
-    if (error) {
-      toast({
-        title: 'Error updating location',
-        description: error.message,
-        variant: 'destructive',
+      setFormData({
+        ...formData,
+        location: locationString,
+        location_lat: geoLocation.latitude,
+        location_lng: geoLocation.longitude,
       });
+
+      const { error } = await (supabase as any)
+        .from('users')
+        .update({
+          demographics: {
+            ...(profile?.demographics as any),
+            location: locationString,
+            location_lat: geoLocation.latitude,
+            location_lng: geoLocation.longitude,
+          }
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        toast({
+          title: 'Error updating location',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Location updated',
+          description: `Your location has been set to ${locationString}`,
+        });
+      }
     } else {
       toast({
-        title: 'Location updated',
-        description: `Your location has been set to ${locationString}`,
+        title: 'Location unavailable',
+        description: 'Please allow location access in your browser or enter your city manually.',
+        variant: 'destructive',
       });
     }
+  };
+
+  // Geocode the manually entered location
+  const handleGeocodeLocation = async () => {
+    if (!user || !formData.location) {
+      toast({
+        title: 'Enter a location',
+        description: 'Please type a city name first (e.g., "New York, NY")',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSaving(true);
+    toast({
+      title: 'Looking up location...',
+      description: `Searching for "${formData.location}"`,
+    });
+
+    const coords = await geocodeLocation(formData.location);
+
+    if (coords) {
+      setFormData({
+        ...formData,
+        location_lat: coords.lat,
+        location_lng: coords.lng,
+      });
+
+      const { error } = await (supabase as any)
+        .from('users')
+        .update({
+          demographics: {
+            ...(profile?.demographics as any),
+            location: formData.location,
+            location_lat: coords.lat,
+            location_lng: coords.lng,
+          }
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        toast({
+          title: 'Error saving location',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Location saved!',
+          description: `Coordinates: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`,
+        });
+      }
+    } else {
+      toast({
+        title: 'Location not found',
+        description: `Could not find coordinates for "${formData.location}". Try a different format like "City, State".`,
+        variant: 'destructive',
+      });
+    }
+    setSaving(false);
   };
 
   if (loading) {
@@ -520,6 +589,11 @@ const Profile = () => {
                   <Label htmlFor="location" className="text-foreground flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
                     Location
+                    {formData.location_lat && formData.location_lng && (
+                      <Badge variant="secondary" className="text-xs ml-2">
+                        📍 {formData.location_lat.toFixed(2)}, {formData.location_lng.toFixed(2)}
+                      </Badge>
+                    )}
                   </Label>
                   <div className="flex gap-2">
                     <Input
@@ -529,29 +603,55 @@ const Profile = () => {
                         setFormData({ ...formData, location: e.target.value })
                       }
                       disabled={!editing}
-                      placeholder="City, State"
+                      placeholder="City, State (e.g., New York, NY)"
                       className={editing ? 'flex-1' : 'flex-1 bg-muted/50 border-border/50'}
                     />
                     {editing && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleUpdateLocation}
-                        disabled={geoLoading || !geoLocation}
-                        className="whitespace-nowrap"
-                      >
-                        {geoLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <MapPin className="h-4 w-4 mr-1" />
-                            Use Current
-                          </>
-                        )}
-                      </Button>
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleGeocodeLocation}
+                          disabled={saving || !formData.location}
+                          className="whitespace-nowrap"
+                          title="Look up coordinates for the entered city"
+                        >
+                          {saving ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Search className="h-4 w-4 mr-1" />
+                              Lookup
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleUpdateLocation}
+                          disabled={geoLoading}
+                          className="whitespace-nowrap"
+                          title={geoLocation ? "Use your current GPS location" : "Location access not available"}
+                        >
+                          {geoLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <MapPin className="h-4 w-4 mr-1" />
+                              GPS
+                            </>
+                          )}
+                        </Button>
+                      </>
                     )}
                   </div>
+                  {editing && (
+                    <p className="text-xs text-muted-foreground">
+                      Enter your city and click "Lookup" to set coordinates, or click "GPS" to use your current location.
+                    </p>
+                  )}
                 </div>
 
                 {/* Basic Info Section */}
