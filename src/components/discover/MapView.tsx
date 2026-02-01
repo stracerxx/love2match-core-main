@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import { useNavigate } from "react-router-dom";
@@ -10,31 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Heart, X, MapPin, MessageCircle, AlertCircle } from 'lucide-react';
 import { calculateDistance } from '@/hooks/useGeolocation';
-import { CITY_COORDINATES } from './cityCoordinates';
-
-// Parse city name and get coordinates
-const getCityCoordinates = (cityString: string | undefined): { lat: number; lng: number } | null => {
-  if (!cityString) return null;
-
-  // Normalize the city name (lowercase, remove state abbreviations)
-  const normalized = cityString.toLowerCase()
-    .replace(/,?\s*(ca|tx|ny|il|az|wa|or|fl|ga|co|nv|ma|tn|pa|oh|nc|mi|nj|va|md|mn|wi|mo|in|ky|sc|al|la|ok|ct|ia|ms|ar|ks|ut|nm|ne|wv|id|hi|nh|me|mt|ri|de|sd|nd|ak|vt|wy|dc)$/i, '')
-    .trim();
-
-  // Check for exact match
-  if (CITY_COORDINATES[normalized]) {
-    return CITY_COORDINATES[normalized];
-  }
-
-  // Check for partial match
-  for (const [city, coords] of Object.entries(CITY_COORDINATES)) {
-    if (normalized.includes(city) || city.includes(normalized)) {
-      return coords;
-    }
-  }
-
-  return null;
-};
+import { lookupCityCoordinates } from './cityCoordinates';
+import {
+  validateCoordinates,
+  applyClusterOffset,
+  geocodeLocation,
+  saveGeocodeCache
+} from '@/lib/geocoding';
 
 interface MapViewProps {
   profiles: UserProfile[];
@@ -47,66 +29,129 @@ interface MapViewProps {
 interface ProfileWithCoords extends UserProfile {
   _mapLat: number;
   _mapLng: number;
+  _locationSource: 'stored' | 'geocoded' | 'dictionary';
+}
+
+/**
+ * Resolve location for a user profile
+ * Priority:
+ * 1. Stored lat/lng coordinates in demographics
+ * 2. City name lookup from dictionary
+ * 3. Geocoding API (async)
+ */
+async function resolveProfileLocation(
+  profile: UserProfile
+): Promise<{ lat: number; lng: number; source: 'stored' | 'geocoded' | 'dictionary' } | null> {
+  const demo = profile.demographics as Record<string, unknown> | undefined;
+
+  // Priority 1: Check for explicit lat/lng in demographics
+  if (demo?.location_lat !== undefined && demo?.location_lng !== undefined) {
+    const validated = validateCoordinates(
+      demo.location_lat as number | string,
+      demo.location_lng as number | string
+    );
+    if (validated) {
+      console.log(`[Map] ${profile.display_name}: Using stored coordinates (${validated.lat}, ${validated.lng})`);
+      return { ...validated, source: 'stored' };
+    }
+  }
+
+  // Get city name from demographics
+  const cityName = demo?.location as string | undefined;
+
+  if (!cityName) {
+    console.log(`[Map] ${profile.display_name}: No location data available`);
+    return null;
+  }
+
+  // Priority 2: Look up in city dictionary (fast, no API call)
+  const dictCoords = lookupCityCoordinates(cityName);
+  if (dictCoords) {
+    console.log(`[Map] ${profile.display_name}: Found "${cityName}" in dictionary -> (${dictCoords.lat}, ${dictCoords.lng})`);
+    return { lat: dictCoords.lat, lng: dictCoords.lng, source: 'dictionary' };
+  }
+
+  // Priority 3: Geocode via API (slower, but accurate)
+  console.log(`[Map] ${profile.display_name}: Geocoding "${cityName}" via API...`);
+  const geocoded = await geocodeLocation(cityName);
+  if (geocoded) {
+    console.log(`[Map] ${profile.display_name}: Geocoded "${cityName}" -> (${geocoded.lat}, ${geocoded.lng})`);
+    return { ...geocoded, source: 'geocoded' };
+  }
+
+  console.log(`[Map] ${profile.display_name}: Could not resolve location for "${cityName}"`);
+  return null;
 }
 
 const MapView = ({ profiles, userLocation, onLike, onPass, radiusFilter }: MapViewProps) => {
   const navigate = useNavigate();
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
+  const [profilesWithCoords, setProfilesWithCoords] = useState<ProfileWithCoords[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const defaultCenter: [number, number] = useMemo(() => userLocation
     ? [userLocation.lat, userLocation.lng]
     : [36.1699, -115.1398], [userLocation]); // Default to Las Vegas
 
-  // Process profiles to extract/geocode locations
-  const profilesWithCoords = useMemo(() => {
+  // Process profiles to resolve locations
+  const processProfiles = useCallback(async () => {
+    setIsLoading(true);
     const processed: ProfileWithCoords[] = [];
 
-    for (const profile of profiles) {
-      const demo = profile.demographics as any;
-      let lat: number | null = null;
-      let lng: number | null = null;
+    // Process profiles in batches to avoid overwhelming the geocoding API
+    const batchSize = 5;
+    for (let i = 0; i < profiles.length; i += batchSize) {
+      const batch = profiles.slice(i, i + batchSize);
 
-      // Priority 1: Check for explicit lat/lng in demographics
-      if (demo?.location_lat && demo?.location_lng) {
-        lat = Number(demo.location_lat);
-        lng = Number(demo.location_lng);
-      }
+      const results = await Promise.all(
+        batch.map(async (profile) => {
+          const location = await resolveProfileLocation(profile);
+          if (!location) return null;
 
-      // Priority 2: Check for current_latitude/current_longitude
-      if (!lat && (profile as any).current_latitude && (profile as any).current_longitude) {
-        lat = Number((profile as any).current_latitude);
-        lng = Number((profile as any).current_longitude);
-      }
+          // Apply small offset to prevent exact stacking
+          const offsetCoords = applyClusterOffset(
+            { lat: location.lat, lng: location.lng },
+            profile.id
+          );
 
-      // Priority 3: Geocode from city name
-      if (!lat) {
-        const cityName = (profile as any).home_city || demo?.location;
-        const coords = getCityCoordinates(cityName);
-        if (coords) {
-          const idHash = String(profile.id).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-          const offsetLat = ((idHash % 100) / 100 - 0.5) * 0.004;
-          const offsetLng = (((idHash * 7) % 100) / 100 - 0.5) * 0.004;
-          lat = coords.lat + offsetLat;
-          lng = coords.lng + offsetLng;
-        }
-      }
+          // Apply radius filter if set
+          if (radiusFilter && userLocation) {
+            const dist = calculateDistance(
+              userLocation.lat,
+              userLocation.lng,
+              offsetCoords.lat,
+              offsetCoords.lng
+            );
+            if (dist > radiusFilter) return null;
+          }
 
-      // Final validation and distance filter
-      if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-        if (radiusFilter && userLocation) {
-          const dist = calculateDistance(userLocation.lat, userLocation.lng, lat, lng);
-          if (dist > radiusFilter) continue;
-        }
+          return {
+            ...profile,
+            _mapLat: offsetCoords.lat,
+            _mapLng: offsetCoords.lng,
+            _locationSource: location.source,
+          } as ProfileWithCoords;
+        })
+      );
 
-        processed.push({
-          ...profile,
-          _mapLat: lat,
-          _mapLng: lng,
-        });
+      processed.push(...results.filter((p): p is ProfileWithCoords => p !== null));
+
+      // Small delay between batches to respect API rate limits
+      if (i + batchSize < profiles.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
-    return processed;
+
+    // Save geocode cache after processing
+    saveGeocodeCache();
+
+    setProfilesWithCoords(processed);
+    setIsLoading(false);
   }, [profiles, userLocation, radiusFilter]);
+
+  useEffect(() => {
+    processProfiles();
+  }, [processProfiles]);
 
   const createCustomIcon = useMemo(() => (photoUrl?: string) => {
     if (photoUrl) {
@@ -139,15 +184,24 @@ const MapView = ({ profiles, userLocation, onLike, onPass, radiusFilter }: MapVi
 
   const profilesWithoutLocation = profiles.length - profilesWithCoords.length;
 
+  // Count by source for debugging
+  const sourceStats = useMemo(() => {
+    const stats = { stored: 0, dictionary: 0, geocoded: 0 };
+    profilesWithCoords.forEach(p => {
+      stats[p._locationSource]++;
+    });
+    return stats;
+  }, [profilesWithCoords]);
+
   return (
     <div className="relative w-full h-full">
       {/* Status indicator showing location data availability */}
       <div className="absolute top-4 left-4 z-[1000] flex flex-col gap-2">
         <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm shadow-md">
           <MapPin className="h-3 w-3 mr-1" />
-          {profilesWithCoords.length} profiles on map
+          {isLoading ? 'Loading...' : `${profilesWithCoords.length} profiles on map`}
         </Badge>
-        {profilesWithoutLocation > 0 && (
+        {!isLoading && profilesWithoutLocation > 0 && (
           <Badge variant="outline" className="bg-background/90 backdrop-blur-sm shadow-md text-muted-foreground">
             <AlertCircle className="h-3 w-3 mr-1" />
             {profilesWithoutLocation} without location
@@ -157,6 +211,12 @@ const MapView = ({ profiles, userLocation, onLike, onPass, radiusFilter }: MapVi
           <Badge variant="outline" className="bg-yellow-100/90 backdrop-blur-sm shadow-md text-yellow-800 border-yellow-300">
             <AlertCircle className="h-3 w-3 mr-1" />
             Set your location in Profile
+          </Badge>
+        )}
+        {/* Debug info - can be removed in production */}
+        {!isLoading && process.env.NODE_ENV === 'development' && (
+          <Badge variant="outline" className="bg-background/90 backdrop-blur-sm shadow-md text-xs">
+            📍 {sourceStats.stored} stored | 📚 {sourceStats.dictionary} dict | 🌐 {sourceStats.geocoded} API
           </Badge>
         )}
       </div>
@@ -187,26 +247,21 @@ const MapView = ({ profiles, userLocation, onLike, onPass, radiusFilter }: MapVi
           showCoverageOnHover={false}
           maxClusterRadius={50}
         >
-          {profilesWithCoords.map((profile) => {
-            const lat = profile._mapLat;
-            const lng = profile._mapLng;
-
-            return (
-              <Marker
-                key={profile.id}
-                position={[lat, lng]}
-                icon={createCustomIcon(profile.photos?.[0])}
-                eventHandlers={{
-                  click: () => setSelectedProfile(profile),
-                }}
-              />
-            );
-          })}
+          {profilesWithCoords.map((profile) => (
+            <Marker
+              key={profile.id}
+              position={[profile._mapLat, profile._mapLng]}
+              icon={createCustomIcon(profile.photos?.[0])}
+              eventHandlers={{
+                click: () => setSelectedProfile(profile),
+              }}
+            />
+          ))}
         </MarkerClusterGroup>
       </MapContainer>
 
       {/* Empty state when no profiles have location data */}
-      {profilesWithCoords.length === 0 && profiles.length > 0 && (
+      {!isLoading && profilesWithCoords.length === 0 && profiles.length > 0 && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-[999] rounded-lg">
           <Card className="max-w-sm mx-4">
             <CardContent className="p-6 text-center">
@@ -238,10 +293,10 @@ const MapView = ({ profiles, userLocation, onLike, onPass, radiusFilter }: MapVi
                 )}
                 <div className="flex-1">
                   <h3 className="font-bold text-lg">{selectedProfile.display_name}</h3>
-                  {((selectedProfile as any).home_city || selectedProfile.demographics?.location) && (
+                  {(selectedProfile.demographics as Record<string, unknown>)?.location && (
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <MapPin className="h-3 w-3" />
-                      <span>{String((selectedProfile as any).home_city || selectedProfile.demographics?.location)}</span>
+                      <span>{String((selectedProfile.demographics as Record<string, unknown>).location)}</span>
                     </div>
                   )}
                   {selectedProfile.bio && (
