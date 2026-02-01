@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ const Discover = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [discoveryPrefs, setDiscoveryPrefs] = useState<any>(null);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -26,7 +27,31 @@ const Discover = () => {
   const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [discoveryPrefs, setDiscoveryPrefs] = useState<any>(null);
+
+  // Memoize filtered profiles to avoid repeating calculation
+  // and to ensure header count matches visible cards
+  const filteredProfiles = useMemo(() => {
+    return profiles.filter(profile => {
+      // If no radius preference or user location, show all
+      if (!discoveryPrefs?.radius || !userLocation) return true;
+
+      const lat = Number((profile.demographics as any)?.location_lat);
+      const lng = Number((profile.demographics as any)?.location_lng);
+
+      // If profile has no coordinates, show it (don't hide just because we don't know distance)
+      if (isNaN(lat) || isNaN(lng)) return true;
+
+      const dist = calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        lat,
+        lng
+      );
+
+      // Only filter out if we explicitly know it's outside the radius
+      return isNaN(dist) || dist <= discoveryPrefs.radius;
+    });
+  }, [profiles, discoveryPrefs, userLocation]);
 
   const loadProfiles = async () => {
     if (!user) return;
@@ -133,7 +158,9 @@ const Discover = () => {
         <div className="flex items-center justify-between max-w-2xl mx-auto w-full">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-primary">Discover</h1>
-            <p className="text-sm text-muted-foreground mt-1">{profiles.length} of {profiles.length} profiles</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {filteredProfiles.length} of {profiles.length} profiles
+            </p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -178,118 +205,107 @@ const Discover = () => {
         <div className="flex-1 p-4 md:p-8">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {profiles
-                .filter(profile => {
-                  if (!discoveryPrefs?.radius || !userLocation) return true;
-                  const dist = calculateDistance(
-                    userLocation.lat,
-                    userLocation.lng,
-                    Number((profile.demographics as any)?.location_lat),
-                    Number((profile.demographics as any)?.location_lng)
-                  );
-                  return dist <= discoveryPrefs.radius;
-                })
-                .map((profile, index) => (
-                  <Card key={profile.id} className="shadow-card-hover overflow-hidden animate-scale-in border-0">
-                    <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20">
-                      {profile.photos?.[0] ? (
-                        <img
-                          src={profile.photos[0]}
-                          alt={profile.display_name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center bg-gradient-hero">
-                          <Heart className="h-24 w-24 text-white/50" />
+              {filteredProfiles.map((profile, index) => (
+                <Card key={profile.id} className="shadow-card-hover overflow-hidden animate-scale-in border-0">
+                  <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20">
+                    {profile.photos?.[0] ? (
+                      <img
+                        src={profile.photos[0]}
+                        alt={profile.display_name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-gradient-hero">
+                        <Heart className="h-24 w-24 text-white/50" />
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 text-white">
+                      <h2 className="mb-2 text-2xl font-bold">
+                        {profile.display_name}
+                      </h2>
+                      {(profile.demographics as any)?.location_lat && (profile.demographics as any)?.location_lng && userLocation && (
+                        <div className="flex items-center gap-1 text-sm">
+                          <MapPin className="h-4 w-4" />
+                          <span>
+                            {calculateDistance(
+                              userLocation.lat,
+                              userLocation.lng,
+                              Number((profile.demographics as any).location_lat),
+                              Number((profile.demographics as any).location_lng)
+                            )} miles away
+                          </span>
                         </div>
                       )}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 text-white">
-                        <h2 className="mb-2 text-2xl font-bold">
-                          {profile.display_name}
-                        </h2>
-                        {(profile.demographics as any)?.location_lat && (profile.demographics as any)?.location_lng && userLocation && (
-                          <div className="flex items-center gap-1 text-sm">
-                            <MapPin className="h-4 w-4" />
-                            <span>
-                              {calculateDistance(
-                                userLocation.lat,
-                                userLocation.lng,
-                                Number((profile.demographics as any).location_lat),
-                                Number((profile.demographics as any).location_lng)
-                              )} miles away
-                            </span>
-                          </div>
+                    </div>
+                  </div>
+
+                  <CardContent className="p-6 bg-card">
+                    {profile.bio && (
+                      <p className="mb-4 text-foreground text-sm line-clamp-3">{profile.bio}</p>
+                    )}
+
+                    {profile.tags && profile.tags.length > 0 && (
+                      <div className="mb-4 flex flex-wrap gap-2">
+                        {profile.tags.slice(0, 3).map((tag: string, i: number) => (
+                          <Badge key={i} variant="secondary" className="bg-secondary/60">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {profile.tags.length > 3 && (
+                          <Badge variant="secondary" className="bg-secondary/60">
+                            +{profile.tags.length - 3}
+                          </Badge>
                         )}
                       </div>
-                    </div>
+                    )}
 
-                    <CardContent className="p-6 bg-card">
-                      {profile.bio && (
-                        <p className="mb-4 text-foreground text-sm line-clamp-3">{profile.bio}</p>
-                      )}
-
-                      {profile.tags && profile.tags.length > 0 && (
-                        <div className="mb-4 flex flex-wrap gap-2">
-                          {profile.tags.slice(0, 3).map((tag: string, i: number) => (
-                            <Badge key={i} variant="secondary" className="bg-secondary/60">
-                              {tag}
-                            </Badge>
-                          ))}
-                          {profile.tags.length > 3 && (
-                            <Badge variant="secondary" className="bg-secondary/60">
-                              +{profile.tags.length - 3}
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="flex flex-col gap-3">
-                        <div className="flex gap-2">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-12 w-12 border-muted-foreground/30"
-                            onClick={() => handlePass(profile)}
-                          >
-                            <X className="h-6 w-6 text-muted-foreground" />
-                          </Button>
-                          <Button
-                            size="lg"
-                            className="flex-1 gradient-primary hover:shadow-lg text-white font-semibold h-12"
-                            onClick={() => handleLike(profile)}
-                          >
-                            <Heart className="mr-2 h-5 w-5" fill="currentColor" />
-                            Like
-                          </Button>
-                        </div>
-
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-2">
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-12 w-12 border-muted-foreground/30"
+                          onClick={() => handlePass(profile)}
+                        >
+                          <X className="h-6 w-6 text-muted-foreground" />
+                        </Button>
                         <Button
                           size="lg"
-                          variant="secondary"
-                          className="w-full flex items-center justify-center gap-2 font-bold h-12 border-primary/20 hover:bg-primary/5 transition-colors"
-                          onClick={() => {
-                            navigate("/messages", { state: { partnerId: profile.id } });
-                          }}
+                          className="flex-1 gradient-primary hover:shadow-lg text-white font-semibold h-12"
+                          onClick={() => handleLike(profile)}
                         >
-                          <MessageCircle className="h-5 w-5 text-primary" />
-                          Message Now
+                          <Heart className="mr-2 h-5 w-5" fill="currentColor" />
+                          Like
                         </Button>
                       </div>
 
                       <Button
-                        variant="ghost"
-                        className="w-full mt-4 text-accent hover:text-accent/80 hover:bg-accent/10 font-medium"
+                        size="lg"
+                        variant="secondary"
+                        className="w-full flex items-center justify-center gap-2 font-bold h-12 border-primary/20 hover:bg-primary/5 transition-colors"
                         onClick={() => {
-                          setCurrentIndex(index);
-                          setIsGiftModalOpen(true);
+                          navigate("/messages", { state: { partnerId: profile.id } });
                         }}
                       >
-                        <Gift className="mr-2 h-4 w-4" />
-                        Send Gift
+                        <MessageCircle className="h-5 w-5 text-primary" />
+                        Message Now
                       </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      className="w-full mt-4 text-accent hover:text-accent/80 hover:bg-accent/10 font-medium"
+                      onClick={() => {
+                        setCurrentIndex(index);
+                        setIsGiftModalOpen(true);
+                      }}
+                    >
+                      <Gift className="mr-2 h-4 w-4" />
+                      Send Gift
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
 
             {profiles.length === 0 && (
