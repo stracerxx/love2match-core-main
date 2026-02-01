@@ -35,10 +35,17 @@ const Discover = () => {
       // If no radius preference or user location, show all
       if (!discoveryPrefs?.radius || !userLocation) return true;
 
-      const lat = Number((profile.demographics as any)?.location_lat);
-      const lng = Number((profile.demographics as any)?.location_lng);
+      const pLat = (profile.demographics as any)?.location_lat;
+      const pLng = (profile.demographics as any)?.location_lng;
 
-      // If profile has no coordinates, show it (don't hide just because we don't know distance)
+      // If profile has no coordinates (null, undefined, empty string, or 0/0 which is usually null in this app)
+      // show it (don't hide just because we don't know distance)
+      if (pLat === null || pLat === undefined || pLat === '' || Number(pLat) === 0) return true;
+      if (pLng === null || pLng === undefined || pLng === '' || Number(pLng) === 0) return true;
+
+      const lat = Number(pLat);
+      const lng = Number(pLng);
+
       if (isNaN(lat) || isNaN(lng)) return true;
 
       const dist = calculateDistance(
