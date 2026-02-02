@@ -313,17 +313,28 @@ const Profile = () => {
         location_lng: geoLocation.longitude,
       });
 
-      const { error } = await (supabase as any)
+      // Get current demographics from DB to ensure we don't lose data
+      const { data: currentUser } = await (supabase as any)
+        .from('users')
+        .select('demographics')
+        .eq('id', user.id)
+        .single();
+
+      const currentDemographics = currentUser?.demographics || {};
+
+      const { data: updatedUser, error } = await (supabase as any)
         .from('users')
         .update({
           demographics: {
-            ...(profile?.demographics as any),
+            ...currentDemographics,
             location: locationString,
             location_lat: geoLocation.latitude,
             location_lng: geoLocation.longitude,
           }
         })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select()
+        .single();
 
       if (error) {
         toast({
@@ -332,6 +343,10 @@ const Profile = () => {
           variant: 'destructive',
         });
       } else {
+        // Update local profile state to stay in sync
+        if (updatedUser) {
+          setProfile(updatedUser);
+        }
         toast({
           title: 'Location updated',
           description: `Your location has been set to ${locationString}`,
@@ -372,17 +387,28 @@ const Profile = () => {
         location_lng: coords.lng,
       });
 
-      const { error } = await (supabase as any)
+      // Get current demographics from DB to ensure we don't lose data
+      const { data: currentUser } = await (supabase as any)
+        .from('users')
+        .select('demographics')
+        .eq('id', user.id)
+        .single();
+
+      const currentDemographics = currentUser?.demographics || {};
+
+      const { data: updatedUser, error } = await (supabase as any)
         .from('users')
         .update({
           demographics: {
-            ...(profile?.demographics as any),
+            ...currentDemographics,
             location: formData.location,
             location_lat: coords.lat,
             location_lng: coords.lng,
           }
         })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select()
+        .single();
 
       if (error) {
         toast({
@@ -391,6 +417,10 @@ const Profile = () => {
           variant: 'destructive',
         });
       } else {
+        // Update local profile state to stay in sync
+        if (updatedUser) {
+          setProfile(updatedUser);
+        }
         toast({
           title: 'Location saved!',
           description: `Coordinates: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`,
