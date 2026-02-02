@@ -1,11 +1,55 @@
 -- ============================================================================
--- UPDATE MOCK USER LOCATIONS
+-- FIX MOCK USERS AND LOCATIONS (v3 - Constraint Fix)
 -- ============================================================================
--- This script assigns random (but consistent) US locations to the mock users
--- with @example.com emails. This ensures the Discover page looks populated
--- with users from different regions when location filtering is applied.
+-- 1. Sync missing mock users from auth.users to public.users
+-- 2. Ensure mandatory fields like full_name are populated
+-- 3. Assign random US locations to all mock users
 -- ============================================================================
 
+-- Variables for cleanup logic
+DO $$
+DECLARE
+    u_record RECORD;
+    v_display_name TEXT;
+BEGIN
+    FOR u_record IN 
+        SELECT id, email FROM auth.users WHERE email LIKE '%@example.com'
+    LOOP
+        -- Generate a readable name from email (e.g. nadia.ahmed30 -> Nadia Ahmed)
+        v_display_name := INITCAP(REPLACE(SPLIT_PART(u_record.email, '@', 1), '.', ' '));
+        
+        -- Remove numbers from the end of the name if present
+        v_display_name := REGEXP_REPLACE(v_display_name, '\d+$', '');
+
+        INSERT INTO public.users (
+            id, 
+            email, 
+            display_name, 
+            full_name, 
+            role, 
+            is_suspended, 
+            account_type, 
+            membership_tier,
+            demographics
+        )
+        VALUES (
+            u_record.id, 
+            u_record.email, 
+            v_display_name, 
+            v_display_name, -- Populate full_name to satisfy constraint
+            'member',
+            false,
+            'free',
+            'standard',
+            '{}'::jsonb
+        )
+        ON CONFLICT (id) DO UPDATE SET
+            full_name = EXCLUDED.full_name,
+            display_name = EXCLUDED.display_name;
+    END LOOP;
+END $$;
+
+-- Update locations for the mock users
 UPDATE public.users
 SET demographics = demographics || CASE 
     WHEN email = 'nadia.ahmed30@example.com' THEN 
@@ -34,7 +78,7 @@ SET demographics = demographics || CASE
 END
 WHERE email LIKE '%@example.com';
 
--- Verify the updates
+-- Verify the result
 SELECT 
     email, 
     display_name, 
