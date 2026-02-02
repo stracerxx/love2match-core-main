@@ -450,13 +450,13 @@ const Profile = () => {
             {!editing && (
               <>
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   onClick={() => setEditing(true)}
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  className="bg-white text-primary font-semibold shadow-lg hover:bg-white/90 border-2 border-white"
                 >
                   <Edit2 className="mr-2 h-4 w-4" />
-                  Edit
+                  Edit Profile
                 </Button>
                 <Button
                   variant="outline"
