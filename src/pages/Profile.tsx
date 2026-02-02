@@ -584,74 +584,88 @@ const Profile = () => {
                   />
                 </div>
 
-                {/* Location Section */}
-                <div className="space-y-2">
-                  <Label htmlFor="location" className="text-foreground flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Location
+                {/* Location Section - Highlighted */}
+                <div className="relative p-4 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-2 border-primary/30 shadow-md">
+                  <div className="absolute -top-3 left-4 px-2 bg-card">
+                    <span className="text-sm font-bold text-primary flex items-center gap-1">
+                      <MapPin className="h-4 w-4" />
+                      📍 Set Your Location
+                    </span>
+                  </div>
+                  <div className="space-y-3 mt-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-foreground/80">
+                        Your location helps others find you on the map!
+                      </p>
+                      {formData.location_lat && formData.location_lng && (
+                        <Badge variant="default" className="bg-green-500 text-white text-xs">
+                          ✓ Location Set
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        id="location"
+                        value={formData.location}
+                        onChange={(e) =>
+                          setFormData({ ...formData, location: e.target.value })
+                        }
+                        disabled={!editing}
+                        placeholder="City, State (e.g., New York, NY)"
+                        className={editing ? 'flex-1 border-primary/50 focus:border-primary' : 'flex-1 bg-muted/50 border-border/50'}
+                      />
+                      {editing && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="default"
+                            size="sm"
+                            onClick={handleGeocodeLocation}
+                            disabled={saving || !formData.location}
+                            className="whitespace-nowrap bg-primary hover:bg-primary/90 text-white font-semibold"
+                            title="Look up coordinates for the entered city"
+                          >
+                            {saving ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Search className="h-4 w-4 mr-1" />
+                                Lookup
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleUpdateLocation}
+                            disabled={geoLoading}
+                            className="whitespace-nowrap border-primary/50 text-primary hover:bg-primary/10 font-semibold"
+                            title={geoLocation ? "Use your current GPS location" : "Location access not available"}
+                          >
+                            {geoLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <MapPin className="h-4 w-4 mr-1" />
+                                GPS
+                              </>
+                            )}
+                          </Button>
+                        </>
+                      )}
+                    </div>
                     {formData.location_lat && formData.location_lng && (
-                      <Badge variant="secondary" className="text-xs ml-2">
-                        📍 {formData.location_lat.toFixed(2)}, {formData.location_lng.toFixed(2)}
-                      </Badge>
+                      <p className="text-xs text-green-600 font-medium">
+                        📍 Coordinates: {formData.location_lat.toFixed(4)}, {formData.location_lng.toFixed(4)}
+                      </p>
                     )}
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="location"
-                      value={formData.location}
-                      onChange={(e) =>
-                        setFormData({ ...formData, location: e.target.value })
-                      }
-                      disabled={!editing}
-                      placeholder="City, State (e.g., New York, NY)"
-                      className={editing ? 'flex-1' : 'flex-1 bg-muted/50 border-border/50'}
-                    />
                     {editing && (
-                      <>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleGeocodeLocation}
-                          disabled={saving || !formData.location}
-                          className="whitespace-nowrap"
-                          title="Look up coordinates for the entered city"
-                        >
-                          {saving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <>
-                              <Search className="h-4 w-4 mr-1" />
-                              Lookup
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleUpdateLocation}
-                          disabled={geoLoading}
-                          className="whitespace-nowrap"
-                          title={geoLocation ? "Use your current GPS location" : "Location access not available"}
-                        >
-                          {geoLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <>
-                              <MapPin className="h-4 w-4 mr-1" />
-                              GPS
-                            </>
-                          )}
-                        </Button>
-                      </>
+                      <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-md">
+                        💡 <strong>Tip:</strong> Enter your city and click "Lookup" to set coordinates, or click "GPS" to use your current location.
+                      </p>
                     )}
                   </div>
-                  {editing && (
-                    <p className="text-xs text-muted-foreground">
-                      Enter your city and click "Lookup" to set coordinates, or click "GPS" to use your current location.
-                    </p>
-                  )}
                 </div>
 
                 {/* Basic Info Section */}
