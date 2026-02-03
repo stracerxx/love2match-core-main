@@ -1,11 +1,32 @@
 -- ============================================================================
--- LOVE2MATCH COMPLETE DATABASE SETUP
+-- LOVE2MATCH COMPLETE DATABASE SETUP - V2 (CONSOLIDATED)
 -- ============================================================================
 -- This consolidated migration includes all necessary tables, functions, 
 -- policies, and security configurations for the Love2Match platform.
--- 
--- Run this ONCE on a fresh Supabase project to set up everything.
+-- It resolves the BIGINT/UUID conflicts found in earlier iterations.
 -- ============================================================================
+
+-- ============================================================================
+-- SECTION 0: PRE-MIGRATION FIXES (Repair existing schema)
+-- ============================================================================
+
+DO $$ 
+BEGIN
+    -- Fix token_transactions: if it exists with BIGINT user_id, back up and drop
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'token_transactions' AND column_name = 'user_id' AND data_type = 'bigint'
+    ) THEN
+        CREATE TABLE IF NOT EXISTS public.token_transactions_backup AS SELECT * FROM public.token_transactions;
+        DROP TABLE public.token_transactions CASCADE;
+    END IF;
+
+    -- Fix swap_requests: if it exists with missing columns, update or recreate
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'swap_requests') AND 
+       NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'swap_requests' AND column_name = 'love_amount') THEN
+        DROP TABLE public.swap_requests CASCADE;
+    END IF;
+END $$;
 
 -- ============================================================================
 -- SECTION 1: CORE TABLES
@@ -35,9 +56,10 @@ CREATE TABLE IF NOT EXISTS public.users (
     updated_at timestamptz DEFAULT now()
 );
 
--- Profiles table (alternative/legacy structure)
+-- Profiles table (legacy/compatibility structure)
+-- NOTE: In production, consider unifying this with users
 CREATE TABLE IF NOT EXISTS public.profiles (
-    id bigserial PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     auth_user_id uuid UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
     email text,
     full_name text,
@@ -62,31 +84,67 @@ CREATE TABLE IF NOT EXISTS public.app_config (
 INSERT INTO public.app_config (key, value, description) VALUES
     ('initial_message_fee', '10', 'LOVE tokens required to send first message'),
     ('daily_faucet_amount', '50', 'LOVE tokens users can claim daily'),
-    ('exchange_rate', '1', 'LOVE to LOVE2 exchange rate'),
-    ('min_exchange_amount', '100', 'Minimum LOVE tokens for exchange')
-ON CONFLICT (key) DO NOTHING;
+    ('love_to_love2_exchange_rate', '1.0', 'Exchange rate for LOVE to LOVE2 swaps'),
+    ('min_exchange_amount', '100', 'Minimum LOVE tokens for exchange'),
+    ('daily_swap_limit_default', '1000', 'Default daily swap limit for users'),
+    ('swap_approval_threshold', '100', 'Amount threshold requiring admin approval'),
+    ('creator_verification_fee', '10', 'LOVE tokens required for creator verification'),
+    ('referral_bonus', '50', 'LOVE tokens awarded for successful referrals')
+ON CONFLICT (key) DO UPDATE SET 
+    value = EXCLUDED.value,
+    description = EXCLUDED.description;
 
 -- Token transactions
 CREATE TABLE IF NOT EXISTS public.token_transactions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    type text NOT NULL CHECK (type IN ('earn', 'spend', 'adjust', 'swap', 'gift', 'purchase', 'referral', 'creator_earnings', 'faucet')),
-    token_type text NOT NULL CHECK (token_type IN ('LOVE', 'LOVE2')),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    type text NOT NULL CHECK (type IN ('earn','spend','adjust','swap','gift','purchase','referral','creator_earnings','faucet')),
+    token_type text NOT NULL CHECK (token_type IN ('LOVE','LOVE2')),
     amount numeric NOT NULL,
     balance_before numeric,
     balance_after numeric,
     description text,
+    related_entity_type text,
+    related_entity_id uuid,
+    metadata jsonb DEFAULT '{}',
     created_at timestamptz DEFAULT now()
 );
 
 -- Swap/Exchange requests
 CREATE TABLE IF NOT EXISTS public.swap_requests (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    from_token_type text NOT NULL,
-    to_token_type text NOT NULL,
-    amount numeric NOT NULL,
-    status text DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    love_amount numeric NOT NULL CHECK (love_amount > 0),
+    love2_amount numeric NOT NULL CHECK (love2_amount > 0),
+    exchange_rate numeric NOT NULL,
+    status text NOT NULL CHECK (status IN ('pending','approved','rejected','completed')) DEFAULT 'pending',
+    admin_notes text,
+    rejected_reason text,
+    approved_by uuid REFERENCES auth.users(id),
+    completed_at timestamptz,
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now()
+);
+
+-- Creator verification requests
+CREATE TABLE IF NOT EXISTS public.creator_verification_requests (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    status text NOT NULL CHECK (status IN ('pending','approved','rejected')) DEFAULT 'pending',
+    verification_fee_paid boolean DEFAULT false,
+    admin_notes text,
+    approved_by uuid REFERENCES auth.users(id),
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now()
+);
+
+-- Daily swap limits
+CREATE TABLE IF NOT EXISTS public.daily_swap_limits (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+    daily_limit numeric NOT NULL DEFAULT 1000,
+    used_today numeric NOT NULL DEFAULT 0,
+    last_reset_date date DEFAULT current_date,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
@@ -94,8 +152,8 @@ CREATE TABLE IF NOT EXISTS public.swap_requests (
 -- Likes table
 CREATE TABLE IF NOT EXISTS public.likes (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    target_user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    target_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     status text NOT NULL CHECK (status IN ('like', 'pass')),
     created_at timestamptz DEFAULT now(),
     UNIQUE(user_id, target_user_id)
@@ -119,7 +177,7 @@ CREATE TABLE IF NOT EXISTS public.threads (
 CREATE TABLE IF NOT EXISTS public.thread_participants (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     thread_id uuid REFERENCES public.threads(id) ON DELETE CASCADE,
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     joined_at timestamptz DEFAULT now(),
     UNIQUE(thread_id, user_id)
 );
@@ -127,8 +185,8 @@ CREATE TABLE IF NOT EXISTS public.thread_participants (
 -- Messages
 CREATE TABLE IF NOT EXISTS public.messages (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    thread_id uuid REFERENCES public.threads(id) ON DELETE CASCADE,
-    sender_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+    thread_id uuid NOT NULL REFERENCES public.threads(id) ON DELETE CASCADE,
+    sender_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     content text NOT NULL,
     created_at timestamptz DEFAULT now()
 );
@@ -421,9 +479,8 @@ CREATE OR REPLACE FUNCTION public.claim_daily_faucet()
 RETURNS jsonb AS $$
 DECLARE
     v_user_id uuid := auth.uid();
-    v_last_claim timestamptz;
-    v_amount numeric;
     v_current_balance numeric;
+    v_amount numeric;
     v_new_balance numeric;
 BEGIN
     IF v_user_id IS NULL THEN
@@ -434,7 +491,7 @@ BEGIN
     SELECT value::numeric INTO v_amount FROM public.app_config WHERE key = 'daily_faucet_amount';
     v_amount := COALESCE(v_amount, 50);
 
-    -- Check last claim time (stored in user metadata or a separate table)
+    -- Check balance
     SELECT love_balance INTO v_current_balance FROM public.users WHERE id = v_user_id;
     
     IF v_current_balance IS NULL THEN
@@ -468,6 +525,8 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.token_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.swap_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.creator_verification_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_swap_limits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.threads ENABLE ROW LEVEL SECURITY;
