@@ -38,7 +38,7 @@ const Health = () => {
       try {
         // Check database connectivity using a simple RPC or raw query
         // Using from() with type assertion to bypass strict typing
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from('users')
           .select('id')
           .limit(1);
@@ -80,7 +80,7 @@ const Health = () => {
     };
 
     checkHealth();
-    
+
     // Re-check every 30 seconds
     const interval = setInterval(checkHealth, 30000);
     return () => clearInterval(interval);
@@ -88,9 +88,9 @@ const Health = () => {
 
   // Return minimal HTML that's easy to parse
   return (
-    <div 
-      style={{ 
-        fontFamily: 'monospace', 
+    <div
+      style={{
+        fontFamily: 'monospace',
         padding: '20px',
         backgroundColor: health.status === 'healthy' ? '#d4edda' : health.status === 'checking' ? '#fff3cd' : '#f8d7da',
         minHeight: '100vh'
@@ -100,7 +100,7 @@ const Health = () => {
       <pre id="health-status">
         {JSON.stringify(health, null, 2)}
       </pre>
-      
+
       <div style={{ marginTop: '20px' }}>
         <h2>Status Indicators</h2>
         <ul>

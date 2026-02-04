@@ -11,7 +11,7 @@ import { Loader2, Shield, User, AlertTriangle } from 'lucide-react';
 const AdminTest = () => {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [debugInfo, setDebugInfo] = useState<any>({});
+  const [debugInfo, setDebugInfo] = useState<Record<string, unknown>>({});
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['userProfile', user?.id],
@@ -162,20 +162,20 @@ const AdminTest = () => {
 
         {/* Actions */}
         <div className="flex gap-4 justify-center">
-          <Button 
+          <Button
             onClick={() => window.location.href = '/admin'}
             disabled={profile?.profile?.role !== 'admin'}
             className="bg-cyan hover:bg-cyan/90"
           >
             Try Admin Dashboard
           </Button>
-          <Button 
+          <Button
             onClick={() => window.location.reload()}
             variant="outline"
           >
             Refresh Page
           </Button>
-          <Button 
+          <Button
             onClick={() => window.location.href = '/'}
             variant="outline"
           >

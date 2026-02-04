@@ -45,19 +45,19 @@ export const DiscoverySettings = ({ isOpen, onClose, onSave }: DiscoverySettings
 
     const loadPreferences = async () => {
         try {
-            const { data, error } = await (supabase as any)
+            const { data, error } = await supabase
                 .from("users")
                 .select("discovery_preferences")
                 .eq("id", user?.id)
                 .single();
 
             if (data && data.discovery_preferences) {
-                const prefs = data.discovery_preferences as any;
+                const prefs = data.discovery_preferences as Record<string, unknown>;
                 setPreferences({
-                    radius: prefs.radius || 50,
-                    age_min: prefs.age_range?.min || 18,
-                    age_max: prefs.age_range?.max || 99,
-                    show_me: prefs.show_me || "everyone",
+                    radius: Number(prefs.radius) || 50,
+                    age_min: (prefs.age_range as Record<string, number> | undefined)?.min || 18,
+                    age_max: (prefs.age_range as Record<string, number> | undefined)?.max || 99,
+                    show_me: String(prefs.show_me) || "everyone",
                 });
             }
         } catch (error) {
@@ -78,7 +78,7 @@ export const DiscoverySettings = ({ isOpen, onClose, onSave }: DiscoverySettings
             show_me: preferences.show_me,
         };
 
-        const { error } = await (supabase as any)
+        const { error } = await supabase
             .from("users")
             .update({ discovery_preferences })
             .eq("id", user.id);

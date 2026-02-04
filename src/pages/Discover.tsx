@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,7 +8,7 @@ import { getDiscoverProfiles, getUserProfile } from '@/lib/profiles';
 import { upsertLike } from '@/lib/likes';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { UserProfile } from '@/lib/supabase';
+import { UserProfile, DiscoveryPreferences } from '@/lib/supabase';
 import { calculateDistance } from '@/hooks/useGeolocation';
 import MapView from '@/components/discover/MapView';
 import { SendGiftModal } from '@/components/SendGiftModal';
@@ -19,7 +18,7 @@ const Discover = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [discoveryPrefs, setDiscoveryPrefs] = useState<any>(null);
+  const [discoveryPrefs, setDiscoveryPrefs] = useState<DiscoveryPreferences | null>(null);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -35,8 +34,8 @@ const Discover = () => {
       // If no radius preference or user location, show all
       if (!discoveryPrefs?.radius || !userLocation) return true;
 
-      const pLat = (profile.demographics as any)?.location_lat;
-      const pLng = (profile.demographics as any)?.location_lng;
+      const pLat = profile.demographics?.location_lat;
+      const pLng = profile.demographics?.location_lng;
 
       // If profile has no coordinates (null, undefined, empty string, or 0/0 which is usually null in this app)
       // show it (don't hide just because we don't know distance)
@@ -64,7 +63,7 @@ const Discover = () => {
     if (!user) return;
 
     setLoading(true);
-    const { profiles: data, error }: any = await getDiscoverProfiles(user.id);
+    const { profiles: data, error } = await getDiscoverProfiles(user.id);
 
     if (error) {
       toast({
@@ -85,8 +84,8 @@ const Discover = () => {
         const { profile } = await getUserProfile(user.id);
         loadProfiles();
         if (profile) {
-          setDiscoveryPrefs(profile.discovery_preferences);
-          const demo = profile.demographics as any;
+          setDiscoveryPrefs(profile.discovery_preferences || null);
+          const demo = profile.demographics;
           if (demo?.location_lat && demo?.location_lng) {
             setUserLocation({
               lat: Number(demo.location_lat),
@@ -99,7 +98,7 @@ const Discover = () => {
     fetchUserProfile();
   }, [user, authLoading]);
 
-  const handleLike = async (profile?: any) => {
+  const handleLike = async (profile?: UserProfile) => {
     if (!user) return;
     const target = profile || profiles[currentIndex];
     if (!target) return;
@@ -122,7 +121,7 @@ const Discover = () => {
     });
   };
 
-  const handlePass = async (profile?: any) => {
+  const handlePass = async (profile?: UserProfile) => {
     if (!user) return;
     const target = profile || profiles[currentIndex];
     if (!target) return;
@@ -230,15 +229,15 @@ const Discover = () => {
                       <h2 className="mb-2 text-2xl font-bold">
                         {profile.display_name}
                       </h2>
-                      {(profile.demographics as any)?.location_lat && (profile.demographics as any)?.location_lng && userLocation && (
+                      {profile.demographics?.location_lat && profile.demographics?.location_lng && userLocation && (
                         <div className="flex items-center gap-1 text-sm">
                           <MapPin className="h-4 w-4" />
                           <span>
                             {calculateDistance(
                               userLocation.lat,
                               userLocation.lng,
-                              Number((profile.demographics as any).location_lat),
-                              Number((profile.demographics as any).location_lng)
+                              Number(profile.demographics.location_lat),
+                              Number(profile.demographics.location_lng)
                             )} miles away
                           </span>
                         </div>

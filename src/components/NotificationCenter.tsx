@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -40,7 +39,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const [profileId, setProfileId] = useState<number | null>(null);
+  const [profileId, setProfileId] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -56,7 +55,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         .single();
 
       if (data?.id) {
-        setProfileId(data.id);
+        setProfileId(String(data.id));
       }
     };
 
@@ -104,7 +103,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', profileId as any)
+        .eq('user_id', profileId)
         .order('created_at', { ascending: false })
         .limit(maxNotifications);
 
@@ -119,13 +118,14 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       }
 
       setNotifications((data as Notification[]) || []);
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string };
       console.error('Error fetching notifications:', error);
       // Don't show error toast for missing table or type mismatch
       if (error.code !== '42P01' && error.code !== '42883') {
         toast({
           title: 'Error',
-          description: 'Failed to load notifications',
+          description: error.message || 'Failed to load notifications',
           variant: 'destructive'
         });
       }
@@ -146,7 +146,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           read_at: new Date().toISOString()
         })
         .eq('id', notificationId)
-        .eq('user_id', profileId as any);
+        .eq('user_id', profileId);
 
       if (error) throw error;
 
@@ -177,7 +177,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           is_read: true,
           read_at: new Date().toISOString()
         })
-        .eq('user_id', profileId as any)
+        .eq('user_id', profileId)
         .eq('is_read', false);
 
       if (error) throw error;
@@ -212,7 +212,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         .from('notifications')
         .delete()
         .eq('id', notificationId)
-        .eq('user_id', profileId as any);
+        .eq('user_id', profileId);
 
       if (error) throw error;
 

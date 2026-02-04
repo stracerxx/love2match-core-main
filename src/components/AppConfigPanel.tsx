@@ -7,34 +7,47 @@ import { Switch } from './ui/switch';
 import { Badge } from './ui/badge';
 import { useToast } from './ui/use-toast';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AppConfig {
   id: string;
-  config_key: string;
-  config_value: string;
-  config_type: 'string' | 'number' | 'boolean' | 'json' | 'array';
-  description: string;
-  category: 'general' | 'tokens' | 'features' | 'limits' | 'ui' | 'security' | 'notifications';
-  is_public: boolean;
-  requires_restart: boolean;
-  updated_by: string;
-  created_at: string;
+  key: string;
+  value: string;
+  description: string | null;
   updated_at: string;
 }
 
+// Metadata for UI mapping
+interface ConfigMetadata {
+  type: 'string' | 'number' | 'boolean' | 'json' | 'array';
+  category: 'general' | 'tokens' | 'features' | 'limits' | 'ui' | 'security' | 'notifications';
+  label: string;
+  isPublic: boolean;
+  requiresRestart: boolean;
+}
+
+const UI_METADATA: Record<string, ConfigMetadata> = {
+  maintenance_mode: { type: 'boolean', category: 'general', label: 'Maintenance Mode', isPublic: true, requiresRestart: false },
+  app_name: { type: 'string', category: 'general', label: 'Application Name', isPublic: true, requiresRestart: false },
+  love_to_love2_exchange_rate: { type: 'number', category: 'tokens', label: 'Exchange Rate (LOVE to LOVE2)', isPublic: true, requiresRestart: false },
+  daily_swap_limit_default: { type: 'number', category: 'limits', label: 'Default Daily Swap Limit', isPublic: false, requiresRestart: false },
+  swap_approval_threshold: { type: 'number', category: 'limits', label: 'Swap Approval Threshold', isPublic: false, requiresRestart: false },
+  creator_verification_fee: { type: 'number', category: 'tokens', label: 'Creator Verification Fee', isPublic: true, requiresRestart: false },
+  referral_bonus: { type: 'number', category: 'tokens', label: 'Referral Bonus', isPublic: true, requiresRestart: false },
+  enable_video_calls: { type: 'boolean', category: 'features', label: 'Enable Video Calls', isPublic: true, requiresRestart: true },
+};
+
 interface AppConfigPanelProps {
   adminMode?: boolean;
-  onConfigUpdate?: (config: AppConfig) => void;
 }
 
 export const AppConfigPanel: React.FC<AppConfigPanelProps> = ({
   adminMode = false,
-  onConfigUpdate
 }) => {
   const [configs, setConfigs] = useState<AppConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<'all' | AppConfig['category']>('all');
+  const [activeCategory, setActiveCategory] = useState<'all' | ConfigMetadata['category']>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const { user } = useAuth();
   const { toast } = useToast();
@@ -57,118 +70,17 @@ export const AppConfigPanel: React.FC<AppConfigPanelProps> = ({
   const fetchConfigs = async () => {
     try {
       setLoading(true);
-      // Mock data - replace with actual API call
-      const mockConfigs: AppConfig[] = [
-        {
-          id: '1',
-          config_key: 'app_name',
-          config_value: 'Love2Match',
-          config_type: 'string',
-          description: 'Application display name',
-          category: 'general',
-          is_public: true,
-          requires_restart: false,
-          updated_by: 'system',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          config_key: 'token_reward_rate',
-          config_value: '10',
-          config_type: 'number',
-          description: 'LOVE tokens earned per profile completion',
-          category: 'tokens',
-          is_public: true,
-          requires_restart: false,
-          updated_by: 'admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: '3',
-          config_key: 'enable_video_calls',
-          config_value: 'true',
-          config_type: 'boolean',
-          description: 'Enable video calling feature',
-          category: 'features',
-          is_public: true,
-          requires_restart: true,
-          updated_by: 'admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: '4',
-          config_key: 'max_daily_messages',
-          config_value: '50',
-          config_type: 'number',
-          description: 'Maximum messages a user can send per day',
-          category: 'limits',
-          is_public: false,
-          requires_restart: false,
-          updated_by: 'admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: '5',
-          config_key: 'theme_colors',
-          config_value: '{"primary":"#ec4899","secondary":"#f472b6","accent":"#f9a8d4"}',
-          config_type: 'json',
-          description: 'Application color theme',
-          category: 'ui',
-          is_public: true,
-          requires_restart: true,
-          updated_by: 'admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: '6',
-          config_key: 'password_min_length',
-          config_value: '8',
-          config_type: 'number',
-          description: 'Minimum password length requirement',
-          category: 'security',
-          is_public: false,
-          requires_restart: false,
-          updated_by: 'admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: '7',
-          config_key: 'push_notifications_enabled',
-          config_value: 'true',
-          config_type: 'boolean',
-          description: 'Enable push notifications',
-          category: 'notifications',
-          is_public: true,
-          requires_restart: false,
-          updated_by: 'admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: '8',
-          config_key: 'feature_flags',
-          config_value: '["gift_shop","content_marketplace","video_calls","token_swap"]',
-          config_type: 'array',
-          description: 'Active feature flags',
-          category: 'features',
-          is_public: false,
-          requires_restart: true,
-          updated_by: 'admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-      setConfigs(mockConfigs);
-    } catch (error) {
+      const { data, error } = await supabase
+        .from('app_config')
+        .select('*')
+        .order('key');
+
+      if (error) throw error;
+      setConfigs(data || []);
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to load configuration',
+        description: error.message || 'Failed to load configuration',
         variant: 'destructive'
       });
     } finally {
@@ -176,33 +88,26 @@ export const AppConfigPanel: React.FC<AppConfigPanelProps> = ({
     }
   };
 
-  const updateConfig = async (configId: string, newValue: string) => {
+  const updateConfig = async (key: string, newValue: string) => {
     try {
-      setSaving(configId);
-      
-      // Mock API call - replace with actual implementation
-      const updatedConfig = configs.find(c => c.id === configId);
-      if (!updatedConfig) return;
+      setSaving(key);
+      const { error } = await supabase
+        .from('app_config')
+        .update({ value: newValue, updated_at: new Date().toISOString() })
+        .eq('key', key);
 
-      const updated: AppConfig = {
-        ...updatedConfig,
-        config_value: newValue,
-        updated_by: user?.email || 'unknown',
-        updated_at: new Date().toISOString()
-      };
+      if (error) throw error;
 
-      setConfigs(prev => prev.map(c => c.id === configId ? updated : c));
-      
+      setConfigs(prev => prev.map(c => c.key === key ? { ...c, value: newValue, updated_at: new Date().toISOString() } : c));
+
       toast({
         title: 'Configuration Updated',
-        description: `${updatedConfig.config_key} has been updated`,
+        description: `${key} has been updated`,
       });
-
-      onConfigUpdate?.(updated);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to update configuration',
+        description: error.message || 'Failed to update configuration',
         variant: 'destructive'
       });
     } finally {
@@ -211,100 +116,92 @@ export const AppConfigPanel: React.FC<AppConfigPanelProps> = ({
   };
 
   const parseConfigValue = (config: AppConfig) => {
+    const meta = UI_METADATA[config.key] || { type: 'string' };
     try {
-      switch (config.config_type) {
+      switch (meta.type) {
         case 'boolean':
-          return config.config_value.toLowerCase() === 'true';
+          return config.value.toLowerCase() === 'true';
         case 'number':
-          return parseFloat(config.config_value);
+          return parseFloat(config.value);
         case 'json':
-          return JSON.parse(config.config_value);
         case 'array':
-          return JSON.parse(config.config_value);
+          return JSON.parse(config.value);
         default:
-          return config.config_value;
+          return config.value;
       }
     } catch {
-      return config.config_value;
+      return config.value;
     }
   };
 
-  const formatConfigValue = (config: AppConfig, value: any) => {
-    switch (config.config_type) {
+  const formatConfigValue = (key: string, value: any): string => {
+    const meta = UI_METADATA[key] || { type: 'string' };
+    switch (meta.type) {
       case 'boolean':
         return value ? 'true' : 'false';
       case 'number':
         return value.toString();
       case 'json':
-        return JSON.stringify(value, null, 2);
       case 'array':
-        return JSON.stringify(value);
+        return typeof value === 'string' ? value : JSON.stringify(value);
       default:
-        return value;
+        return value.toString();
     }
   };
 
   const renderConfigInput = (config: AppConfig) => {
+    const meta = UI_METADATA[config.key] || { type: 'string' };
     const value = parseConfigValue(config);
-    
-    switch (config.config_type) {
+
+    switch (meta.type) {
       case 'boolean':
         return (
           <div className="flex items-center gap-2">
             <Switch
               checked={value as boolean}
-              onCheckedChange={(checked) => updateConfig(config.id, formatConfigValue(config, checked))}
-              disabled={saving === config.id || !adminMode}
+              onCheckedChange={(checked) => updateConfig(config.key, formatConfigValue(config.key, checked))}
+              disabled={saving === config.key || !adminMode}
             />
             <span className="text-sm">{value ? 'Enabled' : 'Disabled'}</span>
           </div>
         );
-      
+
       case 'number':
         return (
           <Input
             type="number"
             value={value as number}
-            onChange={(e) => updateConfig(config.id, e.target.value)}
-            disabled={saving === config.id || !adminMode}
+            onChange={(e) => updateConfig(config.key, e.target.value)}
+            disabled={saving === config.key || !adminMode}
             className="max-w-32"
           />
         );
-      
+
       case 'json':
+      case 'array':
         return (
           <Textarea
-            value={value as string}
-            onChange={(e) => updateConfig(config.id, e.target.value)}
-            disabled={saving === config.id || !adminMode}
+            value={typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+            onChange={(e) => updateConfig(config.key, e.target.value)}
+            disabled={saving === config.key || !adminMode}
             rows={4}
             className="font-mono text-sm"
           />
         );
-      
-      case 'array':
-        return (
-          <Textarea
-            value={value as string}
-            onChange={(e) => updateConfig(config.id, e.target.value)}
-            disabled={saving === config.id || !adminMode}
-            rows={3}
-            className="font-mono text-sm"
-          />
-        );
-      
+
       default:
         return (
           <Input
             value={value as string}
-            onChange={(e) => updateConfig(config.id, e.target.value)}
-            disabled={saving === config.id || !adminMode}
+            onChange={(e) => updateConfig(config.key, e.target.value)}
+            disabled={saving === config.key || !adminMode}
           />
         );
     }
   };
 
-  const getTypeBadge = (type: string) => {
+  const getTypeBadge = (key: string) => {
+    const meta = UI_METADATA[key] || { type: 'string' };
     const typeConfig = {
       string: { color: 'bg-blue-100 text-blue-800', label: 'Text' },
       number: { color: 'bg-green-100 text-green-800', label: 'Number' },
@@ -312,8 +209,8 @@ export const AppConfigPanel: React.FC<AppConfigPanelProps> = ({
       json: { color: 'bg-orange-100 text-orange-800', label: 'JSON' },
       array: { color: 'bg-pink-100 text-pink-800', label: 'Array' }
     };
-    
-    const config = typeConfig[type as keyof typeof typeConfig] || typeConfig.string;
+
+    const config = typeConfig[meta.type as keyof typeof typeConfig] || typeConfig.string;
     return (
       <Badge variant="secondary" className={`text-xs ${config.color}`}>
         {config.label}
@@ -321,8 +218,9 @@ export const AppConfigPanel: React.FC<AppConfigPanelProps> = ({
     );
   };
 
-  const getCategoryBadge = (category: string) => {
-    const categoryConfig = categories.find(c => c.value === category);
+  const getCategoryBadge = (key: string) => {
+    const meta = UI_METADATA[key] || { category: 'general' };
+    const categoryConfig = categories.find(c => c.value === meta.category);
     return (
       <Badge variant="outline" className="text-xs">
         {categoryConfig?.icon} {categoryConfig?.label}
@@ -331,17 +229,17 @@ export const AppConfigPanel: React.FC<AppConfigPanelProps> = ({
   };
 
   const filteredConfigs = configs.filter(config => {
-    const matchesCategory = activeCategory === 'all' || config.category === activeCategory;
-    const matchesSearch = config.config_key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         config.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesVisibility = adminMode || config.is_public;
-    
+    const meta = UI_METADATA[config.key] || { category: 'general', isPublic: true };
+    const matchesCategory = activeCategory === 'all' || meta.category === activeCategory;
+    const matchesSearch = config.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (config.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesVisibility = adminMode || meta.isPublic;
+
     return matchesCategory && matchesSearch && matchesVisibility;
   });
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -352,7 +250,7 @@ export const AppConfigPanel: React.FC<AppConfigPanelProps> = ({
             Manage application settings and feature flags
           </p>
         </div>
-        
+
         {adminMode && (
           <Badge variant="default" className="bg-green-100 text-green-800">
             Admin Mode
@@ -360,7 +258,6 @@ export const AppConfigPanel: React.FC<AppConfigPanelProps> = ({
         )}
       </div>
 
-      {/* Categories */}
       <div className="flex flex-wrap gap-2">
         {categories.map(category => (
           <Button
@@ -376,7 +273,6 @@ export const AppConfigPanel: React.FC<AppConfigPanelProps> = ({
         ))}
       </div>
 
-      {/* Search */}
       <div className="flex gap-4">
         <Input
           placeholder="Search configurations..."
@@ -393,86 +289,85 @@ export const AppConfigPanel: React.FC<AppConfigPanelProps> = ({
         </Button>
       </div>
 
-      {/* Configuration Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredConfigs.map(config => (
-          <Card key={config.id} className="relative">
-            {config.requires_restart && (
-              <Badge variant="destructive" className="absolute -top-2 -right-2 text-xs">
-                Restart Required
-              </Badge>
-            )}
-            
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-lg font-mono break-all">
-                    {config.config_key}
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {config.description}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1 ml-4">
-                  {getTypeBadge(config.config_type)}
-                  {getCategoryBadge(config.category)}
-                </div>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              {/* Current Value Display */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Current Value
-                </label>
-                {renderConfigInput(config)}
-              </div>
-
-              {/* Metadata */}
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div className="flex items-center gap-4">
-                  <span>Updated by: {config.updated_by}</span>
-                  <span>•</span>
-                  <span>
-                    {new Date(config.updated_at).toLocaleDateString()}
-                  </span>
-                </div>
-                {!config.is_public && (
-                  <Badge variant="outline" className="text-xs">
-                    Admin Only
-                  </Badge>
-                )}
-              </div>
-
-              {/* Saving Indicator */}
-              {saving === config.id && (
-                <div className="text-sm text-blue-600 animate-pulse">
-                  Saving...
-                </div>
+        {filteredConfigs.map(config => {
+          const meta = UI_METADATA[config.key] || {};
+          return (
+            <Card key={config.key} className="relative">
+              {meta.requiresRestart && (
+                <Badge variant="destructive" className="absolute -top-2 -right-2 text-xs shadow-md">
+                  Restart Required
+                </Badge>
               )}
-            </CardContent>
-          </Card>
-        ))}
+
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg font-mono break-all text-primary/80">
+                      {config.key}
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {config.description || 'No description provided.'}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1 ml-4">
+                    {getTypeBadge(config.key)}
+                    {getCategoryBadge(config.key)}
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                    Current Value
+                  </label>
+                  {renderConfigInput(config)}
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/40">
+                  <div className="flex items-center gap-4">
+                    <span>Last Updated:</span>
+                    <span className="font-medium text-foreground/70">
+                      {new Date(config.updated_at).toLocaleString()}
+                    </span>
+                  </div>
+                  {!meta.isPublic && (
+                    <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
+                      Admin Only
+                    </Badge>
+                  )}
+                </div>
+
+                {saving === config.key && (
+                  <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] flex items-center justify-center rounded-lg z-20">
+                    <div className="flex items-center gap-2 text-blue-600 font-medium">
+                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      Saving Changes...
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      {/* Empty State */}
       {filteredConfigs.length === 0 && !loading && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <div className="text-4xl mb-4">🔍</div>
-            <h3 className="text-lg font-medium mb-2">No configurations found</h3>
-            <p className="text-muted-foreground">
+        <Card className="border-dashed border-2">
+          <CardContent className="p-12 text-center text-muted-foreground">
+            <div className="text-5xl mb-4 opacity-20">🔍</div>
+            <h3 className="text-xl font-semibold mb-2">No configurations found</h3>
+            <p>
               {searchQuery || activeCategory !== 'all'
-                ? "No configurations match your filters."
-                : "No configurations available."
+                ? "We couldn't find any settings matching your current filters."
+                : "The configuration table appears to be empty."
               }
             </p>
           </CardContent>
         </Card>
       )}
 
-      {/* Loading State */}
       {loading && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[1, 2, 3, 4].map(i => (

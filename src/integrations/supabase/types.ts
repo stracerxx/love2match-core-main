@@ -20,6 +20,9 @@ export type Database = {
           photos: string[] | null
           tags: string[] | null
           demographics: Json | null
+          discovery_preferences: Json | null
+          notification_preferences: Json | null
+          privacy_settings: Json | null
           love_balance: number
           love2_balance: number
           is_suspended: boolean
@@ -42,6 +45,9 @@ export type Database = {
           photos?: string[] | null
           tags?: string[] | null
           demographics?: Json | null
+          discovery_preferences?: Json | null
+          notification_preferences?: Json | null
+          privacy_settings?: Json | null
           love_balance?: number
           love2_balance?: number
           is_suspended?: boolean
@@ -64,6 +70,9 @@ export type Database = {
           photos?: string[] | null
           tags?: string[] | null
           demographics?: Json | null
+          discovery_preferences?: Json | null
+          notification_preferences?: Json | null
+          privacy_settings?: Json | null
           love_balance?: number
           love2_balance?: number
           is_suspended?: boolean

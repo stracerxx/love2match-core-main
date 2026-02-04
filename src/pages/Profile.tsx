@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -168,40 +167,40 @@ const Profile = () => {
         display_name: data.display_name || '',
         full_name: data.full_name || '',
         bio: data.bio || '',
-        location: (data.demographics as any)?.location || '',
-        location_lat: (data.demographics as any)?.location_lat || null,
-        location_lng: (data.demographics as any)?.location_lng || null,
-        interests: (data.demographics as any)?.interests?.join(', ') || '',
-        relationship_goals: (data.demographics as any)?.relationship_goals || '',
-        height: (data.demographics as any)?.height || '',
-        occupation: (data.demographics as any)?.occupation || '',
-        education: (data.demographics as any)?.education || '',
-        languages: (data.demographics as any)?.languages?.join(', ') || '',
-        zodiac_sign: (data.demographics as any)?.zodiac_sign || '',
-        drinking_habits: (data.demographics as any)?.drinking_habits || '',
-        smoking_habits: (data.demographics as any)?.smoking_habits || '',
-        exercise_habits: (data.demographics as any)?.exercise_habits || '',
-        religion: (data.demographics as any)?.religion || '',
-        political_views: (data.demographics as any)?.political_views || '',
-        has_pets: (data.demographics as any)?.has_pets || false,
-        wants_children: (data.demographics as any)?.wants_children || '',
-        personality_type: (data.demographics as any)?.personality_type || '',
-        love_language: (data.demographics as any)?.love_language || '',
-        dealbreakers: (data.demographics as any)?.dealbreakers || '',
-        ideal_date: (data.demographics as any)?.ideal_date || '',
-        social_media_links: (data.demographics as any)?.social_media_links?.join(', ') || '',
-        discovery_radius: (data.discovery_preferences as any)?.radius?.toString() || '50',
-        age_range_min: (data.discovery_preferences as any)?.age_range?.min?.toString() || '18',
-        age_range_max: (data.discovery_preferences as any)?.age_range?.max?.toString() || '99',
-        show_me: (data.discovery_preferences as any)?.show_me || 'everyone',
-        notification_enabled: (data.notification_preferences as any)?.enabled || true,
-        email_notifications: (data.notification_preferences as any)?.email || true,
-        push_notifications: (data.notification_preferences as any)?.push || true,
-        sms_notifications: (data.notification_preferences as any)?.sms || false,
-        privacy_profile_visible: (data.privacy_settings as any)?.profile_visible || true,
-        privacy_show_online_status: (data.privacy_settings as any)?.show_online_status || true,
-        privacy_allow_messaging: (data.privacy_settings as any)?.allow_messaging || true,
-        privacy_show_location: (data.privacy_settings as any)?.show_location || false,
+        location: data.demographics?.location || '',
+        location_lat: (data.demographics?.location_lat as number) || null,
+        location_lng: (data.demographics?.location_lng as number) || null,
+        interests: data.demographics?.interests?.join(', ') || '',
+        relationship_goals: data.demographics?.relationship_goals || '',
+        height: data.demographics?.height || '',
+        occupation: data.demographics?.occupation || '',
+        education: data.demographics?.education || '',
+        languages: data.demographics?.languages?.join(', ') || '',
+        zodiac_sign: data.demographics?.zodiac_sign || '',
+        drinking_habits: data.demographics?.drinking_habits || '',
+        smoking_habits: data.demographics?.smoking_habits || '',
+        exercise_habits: data.demographics?.exercise_habits || '',
+        religion: data.demographics?.religion || '',
+        political_views: data.demographics?.political_views || '',
+        has_pets: data.demographics?.has_pets || false,
+        wants_children: data.demographics?.wants_children?.toString() || '',
+        personality_type: data.demographics?.personality_type || '',
+        love_language: data.demographics?.love_language || '',
+        dealbreakers: data.demographics?.dealbreakers || '',
+        ideal_date: data.demographics?.ideal_date || '',
+        social_media_links: data.demographics?.social_media_links?.join(', ') || '',
+        discovery_radius: data.discovery_preferences?.radius?.toString() || '50',
+        age_range_min: data.discovery_preferences?.age_range?.min?.toString() || '18',
+        age_range_max: data.discovery_preferences?.age_range?.max?.toString() || '99',
+        show_me: data.discovery_preferences?.show_me || 'everyone',
+        notification_enabled: data.notification_preferences?.enabled || true,
+        email_notifications: data.notification_preferences?.email || true,
+        push_notifications: data.notification_preferences?.push || true,
+        sms_notifications: data.notification_preferences?.sms || false,
+        privacy_profile_visible: data.privacy_settings?.profile_visible || true,
+        privacy_show_online_status: data.privacy_settings?.show_online_status || true,
+        privacy_allow_messaging: data.privacy_settings?.allow_messaging || true,
+        privacy_show_location: data.privacy_settings?.show_location || false,
         photos: data.photos || [],
       });
     }
@@ -314,7 +313,7 @@ const Profile = () => {
       });
 
       // Get current demographics from DB to ensure we don't lose data
-      const { data: currentUser } = await (supabase as any)
+      const { data: currentUser } = await supabase
         .from('users')
         .select('demographics')
         .eq('id', user.id)
@@ -322,11 +321,11 @@ const Profile = () => {
 
       const currentDemographics = currentUser?.demographics || {};
 
-      const { data: updatedUser, error } = await (supabase as any)
+      const { data: updatedUser, error } = await supabase
         .from('users')
         .update({
           demographics: {
-            ...currentDemographics,
+            ...(currentDemographics as object),
             location: locationString,
             location_lat: geoLocation.latitude,
             location_lng: geoLocation.longitude,
@@ -345,7 +344,7 @@ const Profile = () => {
       } else {
         // Update local profile state to stay in sync
         if (updatedUser) {
-          setProfile(updatedUser);
+          setProfile(updatedUser as unknown as UserProfile);
         }
         toast({
           title: 'Location updated',
@@ -388,7 +387,7 @@ const Profile = () => {
       });
 
       // Get current demographics from DB to ensure we don't lose data
-      const { data: currentUser } = await (supabase as any)
+      const { data: currentUser } = await supabase
         .from('users')
         .select('demographics')
         .eq('id', user.id)
@@ -396,11 +395,11 @@ const Profile = () => {
 
       const currentDemographics = currentUser?.demographics || {};
 
-      const { data: updatedUser, error } = await (supabase as any)
+      const { data: updatedUser, error } = await supabase
         .from('users')
         .update({
           demographics: {
-            ...currentDemographics,
+            ...(currentDemographics as object),
             location: formData.location,
             location_lat: coords.lat,
             location_lng: coords.lng,
@@ -419,7 +418,7 @@ const Profile = () => {
       } else {
         // Update local profile state to stay in sync
         if (updatedUser) {
-          setProfile(updatedUser);
+          setProfile(updatedUser as unknown as UserProfile);
         }
         toast({
           title: 'Location saved!',

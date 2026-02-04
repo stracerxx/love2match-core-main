@@ -10,6 +10,18 @@ import { Coins, Wallet, RefreshCw, TrendingUp, Shield, Loader2, Edit, X, Save } 
 import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
 
+interface FeeConfigRecord {
+  key: string;
+  value: string;
+  updated_at?: string;
+}
+
+interface TreasuryBalanceRecord {
+  token_type: string;
+  balance: number;
+  updated_at: string;
+}
+
 const TreasuryPanel = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -32,8 +44,8 @@ const TreasuryPanel = () => {
 
   useEffect(() => {
     if (feeConfig && feeConfig.length > 0) {
-      const newValues: any = {};
-      feeConfig.forEach((item: any) => {
+      const newValues: Record<string, string> = {};
+      feeConfig.forEach((item: FeeConfigRecord) => {
         newValues[item.key] = item.value;
       });
       setFeeValues({
@@ -193,7 +205,7 @@ const TreasuryPanel = () => {
               </Button>
             </div>
           ) : treasuryBalances && treasuryBalances.length > 0 ? (
-            treasuryBalances.map((item: any) => (
+            treasuryBalances.map((item: TreasuryBalanceRecord) => (
               <div
                 key={item.token_type}
                 className="p-6 rounded-lg bg-secondary/30 border border-border"

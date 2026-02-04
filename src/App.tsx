@@ -28,7 +28,169 @@ import Index from "./pages/Index";
 import AdminTest from "./pages/AdminTest";
 import Health from "./pages/Health";
 
+import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
+import MaintenanceMode from "@/components/MaintenanceMode";
+
 const queryClient = new QueryClient();
+
+const AppContent = () => {
+  const { isMaintenance, isAdmin, loading } = useMaintenanceMode();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (isMaintenance && !isAdmin) {
+    return <MaintenanceMode />;
+  }
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route
+          path="/discover"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Discover />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Profile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/matches"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Matches />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/wallet"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Wallet />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/games"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Games />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Messages />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Events />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <EventDetail />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/gifts"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Gifts />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/content"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Content />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Notifications />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/video-call"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <VideoCall />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <Layout>
+                <Admin />
+              </Layout>
+            </AdminRoute>
+          }
+        />
+        <Route path="/admin-test" element={<AdminTest />} />
+        <Route path="/health" element={<Health />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -37,146 +199,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
-            <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
-            <Route
-              path="/discover"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Discover />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Profile />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/matches"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Matches />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/wallet"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Wallet />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/games"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Games />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/messages"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Messages />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/events"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Events />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/events/:id"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <EventDetail />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/gifts"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Gifts />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/content"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Content />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notifications"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Notifications />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/video-call"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <VideoCall />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <AdminRoute>
-                  <Layout>
-                    <Admin />
-                  </Layout>
-                </AdminRoute>
-              }
-            />
-            <Route path="/admin-test" element={<AdminTest />} />
-            <Route path="/health" element={<Health />} />
-            <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          <AppContent />
         </TooltipProvider>
       </SolanaWalletProvider>
     </AuthProvider>

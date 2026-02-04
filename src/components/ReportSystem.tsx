@@ -66,7 +66,7 @@ export const ReportSystem: React.FC<ReportSystemProps> = ({
 
   const handleSubmitReport = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!description.trim()) {
       toast({
         title: 'Missing Information',
@@ -87,7 +87,7 @@ export const ReportSystem: React.FC<ReportSystemProps> = ({
 
     try {
       setSubmitting(true);
-      
+
       // Mock API call - replace with actual implementation
       const newReport: Report = {
         id: `report_${Date.now()}`,
@@ -105,12 +105,12 @@ export const ReportSystem: React.FC<ReportSystemProps> = ({
 
       // Add to local state
       setReports(prev => [newReport, ...prev]);
-      
+
       // Reset form
       setDescription('');
       setReportedId('');
       setEvidenceUrls(['']);
-      
+
       toast({
         title: 'Report Submitted',
         description: 'Your report has been received and will be reviewed by our team.',
@@ -147,7 +147,7 @@ export const ReportSystem: React.FC<ReportSystemProps> = ({
       resolved: { variant: 'default' as const, label: 'Resolved' },
       dismissed: { variant: 'outline' as const, label: 'Dismissed' }
     };
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
@@ -178,21 +178,19 @@ export const ReportSystem: React.FC<ReportSystemProps> = ({
       {showHistory && (
         <div className="flex border-b">
           <button
-            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-              activeTab === 'new'
+            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${activeTab === 'new'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
+              }`}
             onClick={() => setActiveTab('new')}
           >
             New Report
           </button>
           <button
-            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-              activeTab === 'history'
+            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${activeTab === 'history'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
+              }`}
             onClick={() => setActiveTab('history')}
           >
             Report History
@@ -221,12 +219,11 @@ export const ReportSystem: React.FC<ReportSystemProps> = ({
                     <button
                       key={type.value}
                       type="button"
-                      className={`p-4 border rounded-lg text-center transition-all ${
-                        reportType === type.value
+                      className={`p-4 border rounded-lg text-center transition-all ${reportType === type.value
                           ? 'border-primary bg-primary/5 text-primary'
                           : 'border-border hover:border-primary/50'
-                      }`}
-                      onClick={() => setReportType(type.value as any)}
+                        }`}
+                      onClick={() => setReportType(type.value as typeof reportType)}
                     >
                       <div className="text-2xl mb-2">{type.icon}</div>
                       <div className="text-sm font-medium">{type.label}</div>
@@ -263,12 +260,11 @@ export const ReportSystem: React.FC<ReportSystemProps> = ({
                     <button
                       key={category.value}
                       type="button"
-                      className={`p-4 border rounded-lg text-left transition-all ${
-                        reportCategory === category.value
+                      className={`p-4 border rounded-lg text-left transition-all ${reportCategory === category.value
                           ? 'border-primary bg-primary/5 text-primary'
                           : 'border-border hover:border-primary/50'
-                      }`}
-                      onClick={() => setReportCategory(category.value as any)}
+                        }`}
+                      onClick={() => setReportCategory(category.value as typeof reportCategory)}
                     >
                       <div className="font-medium mb-1">{category.label}</div>
                       <div className="text-sm text-muted-foreground">
@@ -388,9 +384,9 @@ export const ReportSystem: React.FC<ReportSystemProps> = ({
                           </div>
                           {getStatusBadge(report.status)}
                         </div>
-                        
+
                         <p className="text-sm mb-3">{report.description}</p>
-                        
+
                         {report.evidence_urls && report.evidence_urls.length > 0 && (
                           <div className="mb-3">
                             <p className="text-sm font-medium mb-2">Evidence:</p>

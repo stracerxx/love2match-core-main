@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,13 +44,13 @@ export const TokenFaucet = () => {
     try {
       // Call the claim_daily_faucet RPC function
       // Using type assertion to bypass strict typing (types not generated for custom RPCs)
-      const { data, error } = await (supabase as any).rpc('claim_daily_faucet');
+      const { data, error } = await supabase.rpc('claim_daily_faucet');
 
       if (error) {
         throw error;
       }
 
-      const result = data as FaucetResult;
+      const result = data as unknown as FaucetResult;
 
       if (result.success) {
         setLastClaim(new Date());
@@ -78,7 +77,8 @@ export const TokenFaucet = () => {
           variant: 'destructive',
         });
       }
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       console.error('Faucet claim error:', error);
       toast({
         title: 'Error',

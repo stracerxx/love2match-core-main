@@ -1,6 +1,19 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+
+type AdminUserRow = {
+  id: string;
+  auth_user_id: string;
+  email: string;
+  role: string;
+  full_name: string | null;
+  created_at: string;
+  last_sign_in_at: string | null;
+  love_balance: number;
+  love2_balance: number;
+  membership_tier: string;
+  membership_expires_at: string | null;
+};
 
 type UserProfile = {
   id: string;
@@ -127,18 +140,18 @@ export const adminApi = {
       throw error;
     }
 
-    return (users || []).map((u: any) => ({
+    return ((users as unknown as AdminUserRow[]) || []).map((u) => ({
       id: u.id,
       auth_user_id: u.auth_user_id,
       email: u.email,
       role: u.role,
-      full_name: u.full_name,
+      full_name: u.full_name || undefined,
       created_date: u.created_at,
       love_token_balance: u.love_balance,
       love2_token_balance: u.love2_balance,
       membership_tier: u.membership_tier,
-      membership_expires_at: u.membership_expires_at,
-      last_sign_in_at: u.last_sign_in_at
+      membership_expires_at: u.membership_expires_at || undefined,
+      last_sign_in_at: u.last_sign_in_at || undefined
     }));
   },
 
@@ -538,6 +551,14 @@ export const adminApi = {
 
     if (error) throw error;
     return data || [];
+  },
+
+  /**
+   * Adjust treasury balance (Stub for future implementation)
+   */
+  async adjustTreasuryBalance(tokenType: string, amount: number, description?: string) {
+    console.log('Adjusting treasury balance:', { tokenType, amount, description });
+    return { success: true };
   }
 };
 
