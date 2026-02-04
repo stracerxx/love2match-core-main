@@ -188,24 +188,22 @@ const Admin = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Token Faucet & Membership */}
-          <div className="lg:col-span-1 space-y-6">
-            <FaucetPanel />
-            <MembershipPanel />
-            {/* <TreasuryPanel /> */}
-          </div>
-
           {/* User Management & Pending Exchanges */}
           <div className="lg:col-span-2 space-y-6">
             {/* User Management */}
-            <Card className="shadow-card bg-card border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserCog className="h-5 w-5 text-primary" />
-                  User Management
+            <Card className="shadow-card bg-card border-border border-primary/20">
+              <CardHeader className="border-b border-border/50 bg-primary/5">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <UserCog className="h-5 w-5 text-primary" />
+                    <span>User Management & Roles</span>
+                  </div>
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] uppercase">
+                    Admin Control
+                  </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 {usersLoading ? (
                   <div className="flex justify-center items-center p-8">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -356,6 +354,13 @@ const Admin = () => {
                 )}
               </CardContent>
             </Card>
+          </div>
+
+          {/* Token Faucet & Membership */}
+          <div className="lg:col-span-1 space-y-6">
+            <FaucetPanel />
+            <MembershipPanel />
+            {/* <TreasuryPanel /> */}
           </div>
         </div>
       </div>
