@@ -9,7 +9,8 @@ import MembershipPanel from '@/components/admin/MembershipPanel';
 // import TreasuryPanel from '@/components/admin/TreasuryPanel';
 import { getMembershipBadge } from '@/lib/membership';
 import { format } from 'date-fns';
-import { Loader2, Check, X, Users, Coins, TrendingUp, BarChart3, Shield, UserCog, Zap, Crown, Star } from 'lucide-react';
+import { Loader2, Check, X, Users, Coins, TrendingUp, BarChart3, Shield, UserCog, Zap, Crown, Star, Calendar } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ExchangeRequest {
   id: string;
@@ -78,7 +79,7 @@ const Admin = () => {
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: ({ userId, newRole }: { userId: string; newRole: string }) =>
+    mutationFn: ({ userId, newRole }: { userId: string; newRole: 'member' | 'admin' | 'moderator' }) =>
       adminApi.updateUserRole(userId, newRole),
     onSuccess: () => {
       toast({ title: 'Success', description: 'User role updated.' });
@@ -210,69 +211,78 @@ const Admin = () => {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 ) : isUsersError ? (
-                  <div className="p-8 text-center">
-                    <p className="text-destructive font-medium mb-2">Error loading users</p>
-                    <p className="text-muted-foreground text-sm">{(usersError as Error)?.message || 'Unknown error'}</p>
+                  <div className="p-8 text-center bg-destructive/5 rounded-lg border border-destructive/20">
+                    <p className="text-destructive font-medium mb-1">Error loading users</p>
+                    <p className="text-xs text-muted-foreground">{(usersError as Error)?.message || 'Unknown database error'}</p>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="mt-4"
+                      className="mt-4 border-destructive/30 hover:bg-destructive/10"
                       onClick={() => queryClient.invalidateQueries({ queryKey: ['admin', 'allUsers'] })}
                     >
-                      Retry
+                      Retry Connection
                     </Button>
                   </div>
                 ) : !allUsers || allUsers.length === 0 ? (
-                  <p className="text-muted-foreground text-center p-8">No users found.</p>
+                  <div className="text-center p-8 bg-muted/20 rounded-lg border border-dashed border-muted">
+                    <p className="text-muted-foreground text-sm">No users found in database.</p>
+                  </div>
                 ) : (
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {allUsers.slice(0, 10).map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-foreground">{user.email}</span>
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    {allUsers.map((user) => (
+                      <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-secondary/20 border border-border/50 hover:border-primary/30 transition-all gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="font-semibold text-foreground truncate max-w-[200px]">{user.email}</span>
                             <Badge
-                              className={user.role === 'admin' ? 'badge-cyan' : 'badge-gold'}
+                              className={user.role === 'admin' ? 'bg-cyan/10 text-cyan border-cyan/30' : 'bg-primary/10 text-primary border-primary/30'}
+                              variant="outline"
                             >
                               {user.role}
                             </Badge>
                             {user.membership_tier && user.membership_tier !== 'standard' && (
-                              <Badge className={getMembershipColor(user.membership_tier)}>
+                              <Badge className={cn('flex items-center gap-1', getMembershipColor(user.membership_tier))} variant="outline">
                                 {user.membership_tier === 'plus' ? (
-                                  <Star className="h-3 w-3 mr-1" />
+                                  <Star className="h-3 w-3" />
                                 ) : (
-                                  <Crown className="h-3 w-3 mr-1" />
+                                  <Crown className="h-3 w-3" />
                                 )}
                                 {user.membership_tier.charAt(0).toUpperCase() + user.membership_tier.slice(1)}
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
                             Joined {format(new Date(user.created_date), 'MMM d, yyyy')}
                             {user.membership_expires_at && (
-                              <> • Expires {format(new Date(user.membership_expires_at), 'MMM d, yyyy')}</>
+                              <span className="flex items-center gap-1 ml-2">
+                                • Expires {format(new Date(user.membership_expires_at), 'MMM d, yyyy')}
+                              </span>
                             )}
                           </p>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-cyan text-cyan hover:bg-cyan/10 hover:text-cyan"
-                            onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'admin' })}
-                            disabled={isProcessing || user.role === 'admin'}
-                          >
-                            Make Admin
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-gold text-gold hover:bg-gold/10 hover:text-gold"
-                            onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'member' })}
-                            disabled={isProcessing || user.role === 'member'}
-                          >
-                            Make Member
-                          </Button>
+                        <div className="flex gap-2 self-end sm:self-center">
+                          {user.role !== 'admin' ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 border-cyan/50 text-cyan hover:bg-cyan/10 text-[11px]"
+                              onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'admin' })}
+                              disabled={isProcessing}
+                            >
+                              Make Admin
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 border-primary/50 text-primary hover:bg-primary/10 text-[11px]"
+                              onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'member' })}
+                              disabled={isProcessing}
+                            >
+                              Demote to Member
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}

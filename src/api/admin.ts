@@ -133,26 +133,61 @@ export const adminApi = {
    * Get all users with profile data using the RPC function
    */
   async getAllUsers(): Promise<UserProfile[]> {
-    const { data: users, error } = await supabase.rpc('get_admin_users');
+    try {
+      const { data: users, error } = await supabase.rpc('get_admin_users');
 
-    if (error) {
-      console.error('Error fetching admin users:', error);
-      throw error;
+      if (error) {
+        console.warn('RPC get_admin_users failed, falling back to direct table query:', error);
+
+        // Fallback: Direct query from users table if RPC fails or is missing
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('users')
+          .select(`
+            id,
+            email,
+            role,
+            full_name,
+            created_at,
+            love_balance,
+            love2_balance,
+            membership_tier,
+            membership_expires_at
+          `)
+          .order('created_at', { ascending: false });
+
+        if (fallbackError) throw fallbackError;
+
+        return (fallbackData || []).map((u) => ({
+          id: u.id,
+          auth_user_id: u.id,
+          email: u.email,
+          role: u.role || 'member',
+          full_name: u.full_name || undefined,
+          created_date: u.created_at,
+          love_token_balance: Number(u.love_balance || 0),
+          love2_token_balance: Number(u.love2_balance || 0),
+          membership_tier: u.membership_tier || 'standard',
+          membership_expires_at: u.membership_expires_at || undefined,
+        }));
+      }
+
+      return ((users as unknown as AdminUserRow[]) || []).map((u) => ({
+        id: u.id,
+        auth_user_id: u.auth_user_id,
+        email: u.email,
+        role: u.role,
+        full_name: u.full_name || undefined,
+        created_date: u.created_at,
+        love_token_balance: Number(u.love_balance || 0),
+        love2_token_balance: Number(u.love2_balance || 0),
+        membership_tier: u.membership_tier,
+        membership_expires_at: u.membership_expires_at || undefined,
+        last_sign_in_at: u.last_sign_in_at || undefined
+      }));
+    } catch (err) {
+      console.error('Final error in getAllUsers:', err);
+      throw err;
     }
-
-    return ((users as unknown as AdminUserRow[]) || []).map((u) => ({
-      id: u.id,
-      auth_user_id: u.auth_user_id,
-      email: u.email,
-      role: u.role,
-      full_name: u.full_name || undefined,
-      created_date: u.created_at,
-      love_token_balance: u.love_balance,
-      love2_token_balance: u.love2_balance,
-      membership_tier: u.membership_tier,
-      membership_expires_at: u.membership_expires_at || undefined,
-      last_sign_in_at: u.last_sign_in_at || undefined
-    }));
   },
 
   /**

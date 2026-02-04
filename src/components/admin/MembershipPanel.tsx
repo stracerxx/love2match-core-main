@@ -106,37 +106,37 @@ const MembershipPanel = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Membership Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/30">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/30 border border-border/50">
             <div className="p-2 rounded-full bg-gray-500/10">
               <Users className="h-5 w-5 text-gray-500" />
             </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Standard</p>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate uppercase tracking-wider">Standard</p>
               <p className="text-xl font-bold text-foreground">
                 {statsLoading ? '...' : membershipStats?.standardUsers || 0}
               </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/30">
+
+          <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/30 border border-border/50">
             <div className="p-2 rounded-full bg-blue-500/10">
               <Star className="h-5 w-5 text-blue-500" />
             </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Plus</p>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate uppercase tracking-wider">Plus</p>
               <p className="text-xl font-bold text-foreground">
                 {statsLoading ? '...' : membershipStats?.plusUsers || 0}
               </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/30">
+
+          <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/30 border border-border/50 sm:col-span-2 lg:col-span-1">
             <div className="p-2 rounded-full bg-purple-500/10">
               <Crown className="h-5 w-5 text-purple-500" />
             </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Premium</p>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate uppercase tracking-wider">Premium</p>
               <p className="text-xl font-bold text-foreground">
                 {statsLoading ? '...' : membershipStats?.premiumUsers || 0}
               </p>

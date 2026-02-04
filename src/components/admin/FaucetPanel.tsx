@@ -106,25 +106,25 @@ const FaucetPanel = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Faucet Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/30">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/30 border border-border/50">
             <div className="p-2 rounded-full bg-yellow-500/10">
               <Coins className="h-5 w-5 text-yellow-500" />
             </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">LOVE Distributed</p>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate uppercase tracking-wider">LOVE Distributed</p>
               <p className="text-xl font-bold text-foreground">
                 {statsLoading ? '...' : faucetStats?.totalLOVEDistributed || 0}
               </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/30">
+
+          <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/30 border border-border/50">
             <div className="p-2 rounded-full bg-primary/10">
               <Users className="h-5 w-5 text-primary" />
             </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Distributions</p>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground truncate uppercase tracking-wider">Total Distributions</p>
               <p className="text-xl font-bold text-foreground">
                 {statsLoading ? '...' : faucetStats?.totalDistributions || 0}
               </p>
