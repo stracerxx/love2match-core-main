@@ -11,8 +11,11 @@ import { getMembershipBadge } from '@/lib/membership';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AppConfigPanel } from '@/components/admin/AppConfigPanel';
-import { Loader2, Check, X, Users, Coins, TrendingUp, BarChart3, Shield, UserCog, Zap, Crown, Star, Calendar, Settings } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { useMaintenanceMode } from '@/hooks/useMaintenanceMode';
+import { Loader2, Check, X, Users, Coins, TrendingUp, BarChart3, Shield, UserCog, Zap, Crown, Star, Calendar, Settings, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ExchangeRequest {
   id: string;
@@ -28,6 +31,32 @@ interface ExchangeRequest {
 const Admin = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isMaintenance, loading: maintenanceLoading } = useMaintenanceMode();
+
+  const maintenanceMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { error } = await supabase
+        .from('app_config')
+        .upsert({
+          key: 'maintenance_mode',
+          value: enabled ? 'true' : 'false',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+      if (error) throw error;
+      return enabled;
+    },
+    onSuccess: (enabled) => {
+      toast({
+        title: enabled ? 'Maintenance Mode Active' : 'Maintenance Mode Disabled',
+        description: enabled ? 'The app is now restricted to admins only.' : 'The app is now open to all users.',
+        variant: enabled ? 'destructive' : 'default',
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'maintenance'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Update Failed', description: error.message, variant: 'destructive' });
+    }
+  });
 
   // Platform analytics
   const { data: platformAnalytics, isLoading: analyticsLoading } = useQuery({
@@ -111,14 +140,60 @@ const Admin = () => {
     <div className="min-h-screen p-6 md:ml-20 bg-background">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-primary">Admin Dashboard</h1>
-            <p className="text-muted-foreground mt-2">Manage platform users, tokens, and exchanges</p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between bg-card p-6 rounded-2xl border border-border shadow-sm mb-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-primary/10 rounded-xl">
+              <Shield className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-primary flex items-center gap-3">
+                Admin Dashboard
+                {isMaintenance && (
+                  <Badge className="bg-destructive hover:bg-destructive/90 text-white animate-pulse px-2 py-0 h-6 text-[10px] uppercase font-black letter-spacing-wide">
+                    Maintenance Active
+                  </Badge>
+                )}
+              </h1>
+              <p className="text-muted-foreground text-sm">Manage platform users, tokens, and global settings</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 mt-4 md:mt-0">
-            <Shield className="h-6 w-6 text-cyan" />
-            <span className="text-sm font-medium text-cyan">Administrator Access</span>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-6 md:mt-0">
+            {/* Quick Maintenance Toggle */}
+            <div className={cn(
+              "flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-300",
+              isMaintenance
+                ? "bg-destructive/10 border-destructive/30 shadow-[0_0_15px_rgba(239,68,68,0.1)]"
+                : "bg-background border-border"
+            )}>
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground leading-none mb-1">App Status</span>
+                <span className={cn(
+                  "text-sm font-bold",
+                  isMaintenance ? "text-destructive" : "text-green-500"
+                )}>
+                  {isMaintenance ? 'Maintenance' : 'Live'}
+                </span>
+              </div>
+              <Switch
+                checked={isMaintenance}
+                onCheckedChange={(checked) => maintenanceMutation.mutate(checked)}
+                disabled={maintenanceMutation.isPending || maintenanceLoading}
+                className="data-[state=checked]:bg-destructive"
+              />
+            </div>
+
+            <div className="h-12 w-px bg-border hidden sm:block mx-2" />
+
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-bold text-cyan">Administrator</p>
+                <p className="text-[10px] text-muted-foreground">Authorized session</p>
+              </div>
+              <div className="p-2.5 bg-cyan/10 rounded-lg border border-cyan/20">
+                <Zap className="h-5 w-5 text-cyan" />
+              </div>
+            </div>
           </div>
         </div>
 
