@@ -253,12 +253,18 @@ const Admin = () => {
                           </div>
                           <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            Joined {format(new Date(user.created_date), 'MMM d, yyyy')}
-                            {user.membership_expires_at && (
-                              <span className="flex items-center gap-1 ml-2">
-                                • Expires {format(new Date(user.membership_expires_at), 'MMM d, yyyy')}
-                              </span>
-                            )}
+                            Joined {user.created_date ? (() => {
+                              const d = new Date(user.created_date);
+                              return isNaN(d.getTime()) ? 'Recently' : format(d, 'MMM d, yyyy');
+                            })() : 'Recently'}
+                            {user.membership_expires_at && (() => {
+                              const d = new Date(user.membership_expires_at);
+                              return !isNaN(d.getTime()) && (
+                                <span className="flex items-center gap-1 ml-2">
+                                  • Expires {format(d, 'MMM d, yyyy')}
+                                </span>
+                              );
+                            })()}
                           </p>
                         </div>
                         <div className="flex gap-2 self-end sm:self-center">

@@ -140,30 +140,34 @@ export const adminApi = {
         console.warn('RPC get_admin_users failed, falling back to direct table query:', error);
 
         // Fallback: Direct query from users table if RPC fails or is missing
+        // We avoid explicitly selecting missing columns to prevent SQL errors
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('users')
           .select(`
             id,
             email,
             role,
-            full_name,
-            created_at,
             love_balance,
             love2_balance,
             membership_tier,
-            membership_expires_at
+            membership_expires_at,
+            last_active
           `)
-          .order('created_at', { ascending: false });
+          .order('last_active', { ascending: false });
 
-        if (fallbackError) throw fallbackError;
+        if (fallbackError) {
+          console.error('Direct fallback also failed:', fallbackError);
+          throw fallbackError;
+        }
 
         return (fallbackData || []).map((u) => ({
           id: u.id,
           auth_user_id: u.id,
           email: u.email,
           role: u.role || 'member',
-          full_name: u.full_name || undefined,
-          created_date: u.created_at,
+          // SAFELY map columns that might be missing in production users table
+          full_name: (u as any).full_name || (u as any).display_name || undefined,
+          created_date: (u as any).created_at || u.last_active || new Date().toISOString(),
           love_token_balance: Number(u.love_balance || 0),
           love2_token_balance: Number(u.love2_balance || 0),
           membership_tier: u.membership_tier || 'standard',
