@@ -9,7 +9,9 @@ import MembershipPanel from '@/components/admin/MembershipPanel';
 // import TreasuryPanel from '@/components/admin/TreasuryPanel';
 import { getMembershipBadge } from '@/lib/membership';
 import { format } from 'date-fns';
-import { Loader2, Check, X, Users, Coins, TrendingUp, BarChart3, Shield, UserCog, Zap, Crown, Star, Calendar } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AppConfigPanel } from '@/components/admin/AppConfigPanel';
+import { Loader2, Check, X, Users, Coins, TrendingUp, BarChart3, Shield, UserCog, Zap, Crown, Star, Calendar, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ExchangeRequest {
@@ -120,249 +122,267 @@ const Admin = () => {
           </div>
         </div>
 
-        {/* Platform Analytics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="shadow-card bg-card border-border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Users</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {analyticsLoading ? '...' : platformAnalytics?.total_users || 0}
-                  </p>
-                </div>
-                <div className="p-3 rounded-full bg-primary/10">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="dashboard" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 max-w-md mb-8">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Platform Settings
+            </TabsTrigger>
+          </TabsList>
 
-          <Card className="shadow-card bg-card border-border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">LOVE Supply</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {analyticsLoading ? '...' : platformAnalytics?.total_love_supply || 0}
-                  </p>
-                </div>
-                <div className="p-3 rounded-full bg-cyan/10">
-                  <Coins className="h-6 w-6 text-cyan" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <TabsContent value="dashboard" className="space-y-6 animate-in fade-in-50">
+            {/* Platform Analytics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="shadow-card bg-card border-border">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {analyticsLoading ? '...' : platformAnalytics?.total_users || 0}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-full bg-primary/10">
+                      <Users className="h-6 w-6 text-primary" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card className="shadow-card bg-card border-border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">LOVE2 Supply</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {analyticsLoading ? '...' : platformAnalytics?.total_love2_supply || 0}
-                  </p>
-                </div>
-                <div className="p-3 rounded-full bg-gold/10">
-                  <TrendingUp className="h-6 w-6 text-gold" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              <Card className="shadow-card bg-card border-border">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">LOVE Supply</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {analyticsLoading ? '...' : platformAnalytics?.total_love_supply || 0}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-full bg-cyan/10">
+                      <Coins className="h-6 w-6 text-cyan" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card className="shadow-card bg-card border-border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Pending Exchanges</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {analyticsLoading ? '...' : platformAnalytics?.pending_swap_requests || 0}
-                  </p>
-                </div>
-                <div className="p-3 rounded-full bg-primary/10">
-                  <BarChart3 className="h-6 w-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Card className="shadow-card bg-card border-border">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">LOVE2 Supply</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {analyticsLoading ? '...' : platformAnalytics?.total_love2_supply || 0}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-full bg-gold/10">
+                      <TrendingUp className="h-6 w-6 text-gold" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* User Management & Pending Exchanges */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* User Management */}
-            <Card className="shadow-card bg-card border-border border-primary/20">
-              <CardHeader className="border-b border-border/50 bg-primary/5">
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <UserCog className="h-5 w-5 text-primary" />
-                    <span>User Management & Roles</span>
+              <Card className="shadow-card bg-card border-border">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Pending Exchanges</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        {analyticsLoading ? '...' : platformAnalytics?.pending_swap_requests || 0}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-full bg-primary/10">
+                      <BarChart3 className="h-6 w-6 text-primary" />
+                    </div>
                   </div>
-                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] uppercase">
-                    Admin Control
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                {usersLoading ? (
-                  <div className="flex justify-center items-center p-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : isUsersError ? (
-                  <div className="p-8 text-center bg-destructive/5 rounded-lg border border-destructive/20">
-                    <p className="text-destructive font-medium mb-1">Error loading users</p>
-                    <p className="text-xs text-muted-foreground">{(usersError as Error)?.message || 'Unknown database error'}</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-4 border-destructive/30 hover:bg-destructive/10"
-                      onClick={() => queryClient.invalidateQueries({ queryKey: ['admin', 'allUsers'] })}
-                    >
-                      Retry Connection
-                    </Button>
-                  </div>
-                ) : !allUsers || allUsers.length === 0 ? (
-                  <div className="text-center p-8 bg-muted/20 rounded-lg border border-dashed border-muted">
-                    <p className="text-muted-foreground text-sm">No users found in database.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                    {allUsers.map((user) => (
-                      <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-secondary/20 border border-border/50 hover:border-primary/30 transition-all gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className="font-semibold text-foreground truncate max-w-[200px]">{user.email}</span>
-                            <Badge
-                              className={user.role === 'admin' ? 'bg-cyan/10 text-cyan border-cyan/30' : 'bg-primary/10 text-primary border-primary/30'}
-                              variant="outline"
-                            >
-                              {user.role}
-                            </Badge>
-                            {user.membership_tier && user.membership_tier !== 'standard' && (
-                              <Badge className={cn('flex items-center gap-1', getMembershipColor(user.membership_tier))} variant="outline">
-                                {user.membership_tier === 'plus' ? (
-                                  <Star className="h-3 w-3" />
-                                ) : (
-                                  <Crown className="h-3 w-3" />
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* User Management & Pending Exchanges */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* User Management */}
+                <Card className="shadow-card bg-card border-border border-primary/20">
+                  <CardHeader className="border-b border-border/50 bg-primary/5">
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <UserCog className="h-5 w-5 text-primary" />
+                        <span>User Management & Roles</span>
+                      </div>
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] uppercase">
+                        Admin Control
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    {usersLoading ? (
+                      <div className="flex justify-center items-center p-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                    ) : isUsersError ? (
+                      <div className="p-8 text-center bg-destructive/5 rounded-lg border border-destructive/20">
+                        <p className="text-destructive font-medium mb-1">Error loading users</p>
+                        <p className="text-xs text-muted-foreground">{(usersError as Error)?.message || 'Unknown database error'}</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-4 border-destructive/30 hover:bg-destructive/10"
+                          onClick={() => queryClient.invalidateQueries({ queryKey: ['admin', 'allUsers'] })}
+                        >
+                          Retry Connection
+                        </Button>
+                      </div>
+                    ) : !allUsers || allUsers.length === 0 ? (
+                      <div className="text-center p-8 bg-muted/20 rounded-lg border border-dashed border-muted">
+                        <p className="text-muted-foreground text-sm">No users found in database.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                        {allUsers.map((user) => (
+                          <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-secondary/20 border border-border/50 hover:border-primary/30 transition-all gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 mb-1">
+                                <span className="font-semibold text-foreground truncate max-w-[200px]">{user.email}</span>
+                                <Badge
+                                  className={user.role === 'admin' ? 'bg-cyan/10 text-cyan border-cyan/30' : 'bg-primary/10 text-primary border-primary/30'}
+                                  variant="outline"
+                                >
+                                  {user.role}
+                                </Badge>
+                                {user.membership_tier && user.membership_tier !== 'standard' && (
+                                  <Badge className={cn('flex items-center gap-1', getMembershipColor(user.membership_tier))} variant="outline">
+                                    {user.membership_tier === 'plus' ? (
+                                      <Star className="h-3 w-3" />
+                                    ) : (
+                                      <Crown className="h-3 w-3" />
+                                    )}
+                                    {user.membership_tier.charAt(0).toUpperCase() + user.membership_tier.slice(1)}
+                                  </Badge>
                                 )}
-                                {user.membership_tier.charAt(0).toUpperCase() + user.membership_tier.slice(1)}
-                              </Badge>
-                            )}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                Joined {user.created_date ? (() => {
+                                  const d = new Date(user.created_date);
+                                  return isNaN(d.getTime()) ? 'Recently' : format(d, 'MMM d, yyyy');
+                                })() : 'Recently'}
+                                {user.membership_expires_at && (() => {
+                                  const d = new Date(user.membership_expires_at);
+                                  return !isNaN(d.getTime()) && (
+                                    <span className="flex items-center gap-1 ml-2">
+                                      • Expires {format(d, 'MMM d, yyyy')}
+                                    </span>
+                                  );
+                                })()}
+                              </p>
+                            </div>
+                            <div className="flex gap-2 self-end sm:self-center">
+                              {user.role !== 'admin' ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 border-cyan/50 text-cyan hover:bg-cyan/10 text-[11px]"
+                                  onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'admin' })}
+                                  disabled={isProcessing}
+                                >
+                                  Make Admin
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 border-primary/50 text-primary hover:bg-primary/10 text-[11px]"
+                                  onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'member' })}
+                                  disabled={isProcessing}
+                                >
+                                  Demote to Member
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            Joined {user.created_date ? (() => {
-                              const d = new Date(user.created_date);
-                              return isNaN(d.getTime()) ? 'Recently' : format(d, 'MMM d, yyyy');
-                            })() : 'Recently'}
-                            {user.membership_expires_at && (() => {
-                              const d = new Date(user.membership_expires_at);
-                              return !isNaN(d.getTime()) && (
-                                <span className="flex items-center gap-1 ml-2">
-                                  • Expires {format(d, 'MMM d, yyyy')}
-                                </span>
-                              );
-                            })()}
-                          </p>
-                        </div>
-                        <div className="flex gap-2 self-end sm:self-center">
-                          {user.role !== 'admin' ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 border-cyan/50 text-cyan hover:bg-cyan/10 text-[11px]"
-                              onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'admin' })}
-                              disabled={isProcessing}
-                            >
-                              Make Admin
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 border-primary/50 text-primary hover:bg-primary/10 text-[11px]"
-                              onClick={() => updateRoleMutation.mutate({ userId: user.auth_user_id, newRole: 'member' })}
-                              disabled={isProcessing}
-                            >
-                              Demote to Member
-                            </Button>
-                          )}
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    )}
+                  </CardContent>
+                </Card>
 
-            {/* Pending Exchanges */}
-            <Card className="shadow-card bg-card border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Coins className="h-5 w-5 text-primary" />
-                  Pending Token Exchanges
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {exchangesLoading ? (
-                  <div className="flex justify-center items-center p-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : !pendingExchanges || pendingExchanges.length === 0 ? (
-                  <p className="text-muted-foreground text-center p-8">No pending exchange requests.</p>
-                ) : (
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {pendingExchanges.map((req) => (
-                      <div key={req.id} className="p-4 rounded-lg bg-secondary/30">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <div className="font-medium text-foreground">{req.user_email}</div>
-                            <div className="text-xs text-muted-foreground">{req.user_id}</div>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {format(new Date(req.created_at), 'PP p')}
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-medium text-foreground">
-                            {req.amount} {req.from_token.toUpperCase()} → {req.to_token.toUpperCase()}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-green-500 text-green-500 hover:bg-green-500/10 hover:text-green-500"
-                              onClick={() => approveMutation.mutate(req.id.toString())}
-                              disabled={isProcessing}
-                            >
-                              <Check className="h-4 w-4 mr-2" /> Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() => rejectMutation.mutate(req.id.toString())}
-                              disabled={isProcessing}
-                            >
-                              <X className="h-4 w-4 mr-2" /> Reject
-                            </Button>
-                          </div>
-                        </div>
+                {/* Pending Exchanges */}
+                <Card className="shadow-card bg-card border-border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Coins className="h-5 w-5 text-primary" />
+                      Pending Token Exchanges
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {exchangesLoading ? (
+                      <div className="flex justify-center items-center p-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                    ) : !pendingExchanges || pendingExchanges.length === 0 ? (
+                      <p className="text-muted-foreground text-center p-8">No pending exchange requests.</p>
+                    ) : (
+                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {pendingExchanges.map((req) => (
+                          <div key={req.id} className="p-4 rounded-lg bg-secondary/30">
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <div className="font-medium text-foreground">{req.user_email}</div>
+                                <div className="text-xs text-muted-foreground">{req.user_id}</div>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {format(new Date(req.created_at), 'PP p')}
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm font-medium text-foreground">
+                                {req.amount} {req.from_token.toUpperCase()} → {req.to_token.toUpperCase()}
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-green-500 text-green-500 hover:bg-green-500/10 hover:text-green-500"
+                                  onClick={() => approveMutation.mutate(req.id.toString())}
+                                  disabled={isProcessing}
+                                >
+                                  <Check className="h-4 w-4 mr-2" /> Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                  onClick={() => rejectMutation.mutate(req.id.toString())}
+                                  disabled={isProcessing}
+                                >
+                                  <X className="h-4 w-4 mr-2" /> Reject
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
 
-          {/* Token Faucet & Membership */}
-          <div className="lg:col-span-1 space-y-6">
-            <FaucetPanel />
-            <MembershipPanel />
-            {/* <TreasuryPanel /> */}
-          </div>
-        </div>
+              {/* Token Faucet & Membership */}
+              <div className="lg:col-span-1 space-y-6">
+                <FaucetPanel />
+                <MembershipPanel />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="settings" className="animate-in fade-in-50">
+            <AppConfigPanel adminMode={true} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
